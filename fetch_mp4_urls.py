@@ -1,7 +1,13 @@
+import os
+
 def process_video_list(file_path):
-    with open(file_path, 'r') as file:
-        youtube_urls = file.readlines()
-    
+    try:
+        with open(file_path, 'r') as file:
+            youtube_urls = file.readlines()
+    except FileNotFoundError:
+        print(f"Error: File {file_path} not found.")
+        return []
+
     urls = []
     for youtube_url in youtube_urls:
         youtube_url = youtube_url.strip()  # Hapus spasi ekstra
@@ -14,11 +20,14 @@ def process_video_list(file_path):
                 urls.append("ERROR")
     return urls
 
-if __name__ == "__master__":
+if __name__ == "__main__":  # Perbaiki __name__ menjadi __main__
     file_path = "public/list.txt"  # Ganti dengan path file list.txt kamu
     mp4_urls = process_video_list(file_path)
     
-    # Menyimpan hasil ke dalam file output
-    with open("public/output.txt", "w") as f:
+    # Membuat folder jika belum ada
+    os.makedirs("public/urls", exist_ok=True)
+
+    # Menyimpan hasil ke dalam file output.txt
+    with open("public/urls/output.txt", "w") as f:
         for url in mp4_urls:
             f.write(url + "\n")
