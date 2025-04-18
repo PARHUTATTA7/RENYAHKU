@@ -1,28 +1,24 @@
-from fastapi import FastAPI, Query
-from fastapi.responses import JSONResponse
-import subprocess
+def process_video_list(file_path):
+    with open(file_path, 'r') as file:
+        youtube_urls = file.readlines()
+    
+    urls = []
+    for youtube_url in youtube_urls:
+        youtube_url = youtube_url.strip()  # Hapus spasi ekstra
+        if youtube_url:
+            try:
+                mp4_url = get_mp4_url(youtube_url)
+                urls.append(mp4_url)
+            except Exception as e:
+                print(f"Failed to process {youtube_url}: {e}")
+                urls.append("ERROR")
+    return urls
 
-app = FastAPI()
-
-@app.get("/getvideo")
-def get_video(url: str = Query(...)):
-    if not url.startswith("http"):
-        return JSONResponse(status_code=400, content={"error": "Invalid URL"})
-
-    try:
-        result = subprocess.run(
-        ["python3", "-m", "yt_dlp", "-f", "best[ext=mp4]", "-g", url],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-
-        if result.returncode != 0:
-            return JSONResponse(status_code=500, content={
-                "error": "yt-dlp failed",
-                "detail": result.stderr.strip()
-            })
-
-        return {"url": result.stdout.strip()}
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+if __name__ == "__main__":
+    file_path = "public/list.txt"  # Ganti dengan path file list.txt kamu
+    mp4_urls = process_video_list(file_path)
+    
+    # Menyimpan hasil ke dalam file output
+    with open("public/urls/output.txt", "w") as f:
+        for url in mp4_urls:
+            f.write(url + "\n")
