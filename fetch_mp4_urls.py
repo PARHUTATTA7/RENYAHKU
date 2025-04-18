@@ -2,11 +2,14 @@ import yt_dlp
 import os
 
 def get_mp4_url(youtube_url):
-    # Menyeting opsi yt-dlp
+    # Menyeting opsi yt-dlp dengan pengaturan proxy dan negara
     ydl_opts = {
         'format': 'bestaudio/best',  # Mengambil kualitas terbaik
         'quiet': False,  # Menampilkan output dari yt-dlp untuk debugging
         'noplaylist': True,  # Tidak ikut playlist
+        'geo_bypass': True,  # Melewati pembatasan geografis
+        'geo_bypass_country': 'ID',  # Mengatur negara ke US
+        # 'proxy': 'http://your.proxy.address:port',  # Jika Anda menggunakan proxy
     }
 
     try:
@@ -15,7 +18,7 @@ def get_mp4_url(youtube_url):
             info_dict = ydl.extract_info(youtube_url, download=False)
             mp4_url = None
             print(f"info_dict: {info_dict}")  # Debug info_dict untuk memeriksa data yang diterima
-            
+
             # Cek format yang tersedia
             for format in info_dict['formats']:
                 if 'mp4' in format['ext']:
