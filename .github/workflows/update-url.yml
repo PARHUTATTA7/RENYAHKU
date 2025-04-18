@@ -1,7 +1,7 @@
 name: Fetch MP4 URLs from YouTube
 
 on:
-  workflow_dispatch: # Manual trigger
+  workflow_dispatch:  # Manual trigger
   schedule:
     - cron: '0 */6 * * *'  # Menjalankan setiap 6 jam
 
@@ -16,7 +16,7 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'  # Gunakan versi Python yang sesuai
+        python-version: '3.10'
 
     - name: Install yt-dlp
       run: |
@@ -25,6 +25,13 @@ jobs:
     - name: Install Dependencies
       run: |
         pip install -r requirements.txt  # Install dependencies jika ada
+
+    - name: Debugging: List Files and Python Version
+      run: |
+        echo "Listing current directory files:"
+        ls -al
+        echo "Python version:"
+        python --version
 
     - name: Run Python Script to Fetch MP4 URLs
       run: |
@@ -40,7 +47,7 @@ def get_mp4_url(youtube_url):
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info_dict = ydl.extract_info(youtube_url, download=False)
-        return info_dict['url']  # URL video MP4 terbaik
+        return info_dict['url']
 
 def process_video_list(file_path):
     with open(file_path, 'r') as file:
@@ -48,7 +55,7 @@ def process_video_list(file_path):
     
     urls = []
     for youtube_url in youtube_urls:
-        youtube_url = youtube_url.strip()  # Hapus spasi ekstra
+        youtube_url = youtube_url.strip()
         if youtube_url:
             try:
                 mp4_url = get_mp4_url(youtube_url)
@@ -58,7 +65,7 @@ def process_video_list(file_path):
                 urls.append('ERROR')
     return urls
 
-file_path = 'public/list.txt'  # Ganti dengan path file list.txt kamu
+file_path = 'public/list.txt'
 mp4_urls = process_video_list(file_path)
 
 # Menyimpan hasil ke dalam file output.txt
@@ -66,7 +73,7 @@ with open('public/urls/output.txt', 'w') as f:
     for url in mp4_urls:
         f.write(url + '\\n')
         "
-    
+
     - name: Commit & Push URL Updates
       run: |
         git config --global user.email "action@github.com"
