@@ -14,7 +14,7 @@ def process_video_list(file_path):
                 urls.append("ERROR")
     return urls
 
-if __name__ == "__main__":
+if __name__ == "__master__":
     file_path = "public/list.txt"  # Ganti dengan path file list.txt kamu
     mp4_urls = process_video_list(file_path)
     
