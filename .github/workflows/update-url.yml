@@ -1,0 +1,76 @@
+name: Fetch MP4 URLs from YouTube
+
+on:
+  workflow_dispatch: # Manual trigger
+  schedule:
+    - cron: '0 */6 * * *'  # Menjalankan setiap 6 jam
+
+jobs:
+  fetch-urls:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'  # Gunakan versi Python yang sesuai
+
+    - name: Install yt-dlp
+      run: |
+        pip install yt-dlp
+
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt  # Install dependencies jika ada
+
+    - name: Run Python Script to Fetch MP4 URLs
+      run: |
+        python3 -c "
+import yt_dlp
+
+def get_mp4_url(youtube_url):
+    ydl_opts = {
+        'format': 'best[ext=mp4]',
+        'quiet': True,
+        'noplaylist': True,
+        'forceurl': True,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(youtube_url, download=False)
+        return info_dict['url']  # URL video MP4 terbaik
+
+def process_video_list(file_path):
+    with open(file_path, 'r') as file:
+        youtube_urls = file.readlines()
+    
+    urls = []
+    for youtube_url in youtube_urls:
+        youtube_url = youtube_url.strip()  # Hapus spasi ekstra
+        if youtube_url:
+            try:
+                mp4_url = get_mp4_url(youtube_url)
+                urls.append(mp4_url)
+            except Exception as e:
+                print(f"Failed to process {youtube_url}: {e}")
+                urls.append('ERROR')
+    return urls
+
+file_path = 'public/list.txt'  # Ganti dengan path file list.txt kamu
+mp4_urls = process_video_list(file_path)
+
+# Menyimpan hasil ke dalam file output.txt
+with open('public/urls/output.txt', 'w') as f:
+    for url in mp4_urls:
+        f.write(url + '\\n')
+        "
+    
+    - name: Commit & Push URL Updates
+      run: |
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Action"
+        git add public/urls/output.txt
+        git commit -m "Update MP4 URLs from yt-dlp" || echo "No changes"
+        git push
