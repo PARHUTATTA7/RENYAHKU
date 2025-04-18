@@ -1,15 +1,14 @@
 import yt_dlp
-import os
 
 def get_mp4_url(youtube_url):
-    # Menyeting opsi yt-dlp dengan pengaturan proxy dan negara
+    # Menyeting opsi yt-dlp dengan file cookies yang diekspor
     ydl_opts = {
         'format': 'bestaudio/best',  # Mengambil kualitas terbaik
         'quiet': False,  # Menampilkan output dari yt-dlp untuk debugging
         'noplaylist': True,  # Tidak ikut playlist
         'geo_bypass': True,  # Melewati pembatasan geografis
-        'geo_bypass_country': 'ID',  # Mengatur negara ke US
-        # 'proxy': 'http://your.proxy.address:port',  # Jika Anda menggunakan proxy
+        'geo_bypass_country': 'US',  # Mengatur negara ke US
+        'cookies': 'path_to_your_cookies_file.json',  # Ganti dengan path ke file cookies yang diekspor
     }
 
     try:
