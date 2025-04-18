@@ -16,63 +16,27 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.10'  # Gunakan versi Python yang sesuai
 
     - name: Install yt-dlp
       run: |
+        python -m pip install --upgrade pip
         pip install yt-dlp
 
-    - name: Install Dependencies
+    - name: Install Dependencies (if any)
       run: |
-        pip install -r requirements.txt  # Install dependencies jika ada
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - name: Debugging: List Files and Python Version
+    - name: Verify Files and Python Version
       run: |
-        echo "Listing current directory files:"
+        echo "Listing files in the current directory:"
         ls -al
         echo "Python version:"
         python --version
 
     - name: Run Python Script to Fetch MP4 URLs
       run: |
-        python3 -c "
-import yt_dlp
-
-def get_mp4_url(youtube_url):
-    ydl_opts = {
-        'format': 'best[ext=mp4]',
-        'quiet': True,
-        'noplaylist': True,
-        'forceurl': True,
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(youtube_url, download=False)
-        return info_dict['url']
-
-def process_video_list(file_path):
-    with open(file_path, 'r') as file:
-        youtube_urls = file.readlines()
-    
-    urls = []
-    for youtube_url in youtube_urls:
-        youtube_url = youtube_url.strip()
-        if youtube_url:
-            try:
-                mp4_url = get_mp4_url(youtube_url)
-                urls.append(mp4_url)
-            except Exception as e:
-                print(f"Failed to process {youtube_url}: {e}")
-                urls.append('ERROR')
-    return urls
-
-file_path = 'public/list.txt'
-mp4_urls = process_video_list(file_path)
-
-# Menyimpan hasil ke dalam file output.txt
-with open('public/urls/output.txt', 'w') as f:
-    for url in mp4_urls:
-        f.write(url + '\\n')
-        "
+        python3 fetch_mp4_urls.py
 
     - name: Commit & Push URL Updates
       run: |
