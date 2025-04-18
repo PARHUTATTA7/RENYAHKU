@@ -19,6 +19,6 @@ if __name__ == "__master__":
     mp4_urls = process_video_list(file_path)
     
     # Menyimpan hasil ke dalam file output
-    with open("public/urls/output.txt", "w") as f:
+    with open("public/output.txt", "w") as f:
         for url in mp4_urls:
             f.write(url + "\n")
