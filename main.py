@@ -1,23 +1,28 @@
-from flask import Flask, request, jsonify
-import yt_dlp
+from fastapi import FastAPI, Query
+from fastapi.responses import JSONResponse
+import subprocess
 
-app = Flask(__name__)
+app = FastAPI()
 
-@app.route("/get_youtube_url")
-def get_youtube_url():
-    video_url = request.args.get("url")
-    if not video_url:
-        return jsonify({"error": "No URL provided"}), 400
+@app.get("/getvideo")
+def get_video(url: str = Query(...)):
+    if not url.startswith("http"):
+        return JSONResponse(status_code=400, content={"error": "Invalid URL"})
 
-    ydl_opts = {
-        "quiet": True,
-        "format": "18",  # mp4 360p
-        "skip_download": True,
-    }
+    try:
+        result = subprocess.run(
+        ["python3", "-m", "yt_dlp", "-f", "best[ext=mp4]", "-g", url],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            info = ydl.extract_info(video_url, download=False)
-            return jsonify({"url": info["url"]})
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        if result.returncode != 0:
+            return JSONResponse(status_code=500, content={
+                "error": "yt-dlp failed",
+                "detail": result.stderr.strip()
+            })
+
+        return {"url": result.stdout.strip()}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
