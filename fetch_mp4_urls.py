@@ -74,14 +74,18 @@ def process_video_list(file_path):
     for youtube_url in youtube_urls:
         youtube_url = youtube_url.strip()  # Hapus spasi ekstra
         if youtube_url:
+            # Memisahkan nama dari URL jika ada format seperti 'NAMA https://url.com'
+            parts = youtube_url.split(' ', 1)
+            if len(parts) > 1:
+                youtube_url = parts[1]  # Mengambil hanya URL
             print(f"Processing URL: {youtube_url}")
             try:
                 video_name, video_url = get_video_url(youtube_url)
                 print(f"Video Name: {video_name}, Video URL: {video_url}")  # Debugging hasil dari get_video_url
-                video_info.append((video_name, video_url))  # Menyimpan nama dan URL
+                video_info.append(f"{video_name} - {video_url}")
             except Exception as e:
                 print(f"Failed to process {youtube_url}: {e}")
-                video_info.append(("ERROR", None))
+                video_info.append("ERROR")
         else:
             print("Empty line detected, skipping.")
     
@@ -105,25 +109,22 @@ def git_push(output_file_path):
 # Fungsi utama untuk menjalankan script
 if __name__ == "__main__":
     file_path = "list.txt"  # Ganti dengan path file list.txt kamu
-    video_info = process_video_list(file_path)
+    video_urls = process_video_list(file_path)
     
     # Menyimpan hasil ke dalam file output yang sesuai dengan format
-    for video_name, video_url in video_info:
-        if video_url:  # Jika URL berhasil didapatkan
+    for url in video_urls:
+        if "m3u8" in url:
             # Menyimpan sebagai file .m3u8 jika formatnya m3u8
-            if "m3u8" in video_url:
-                output_file_path = f"github/namarepo/{video_name}.m3u8"
-            else:
-                # Menyimpan sebagai file .mp4 jika formatnya mp4
-                output_file_path = f"github/namarepo/{video_name}.mp4"
-            
-            # Menyimpan hasil ke dalam file output
-            with open(output_file_path, "w") as f:
-                f.write(video_url + "\n")
-
-            print(f"Process completed. Output saved to {output_file_path}.")
-            
-            # Push hasil ke GitHub repository
-            git_push(output_file_path)
+            output_file_path = f"github/namarepo/{url.split()[0]}.m3u8"
         else:
-            print(f"Skipping {video_name}, no video URL found.")
+            # Menyimpan sebagai file .mp4 jika formatnya mp4
+            output_file_path = f"github/namarepo/{url.split()[0]}.mp4"
+        
+        # Menyimpan hasil ke dalam file output
+        with open(output_file_path, "w") as f:
+            f.write(url + "\n")
+
+        print(f"Process completed. Output saved to {output_file_path}.")
+        
+        # Push hasil ke GitHub repository
+        git_push(output_file_path)
