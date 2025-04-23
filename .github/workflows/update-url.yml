@@ -7,23 +7,24 @@ on:
 
 jobs:
   fetch_video_urls:
-    runs-on: ubuntu-latest  # Menjalankan di environment Ubuntu
+    runs-on: ubuntu-latest  # Menjalankan di environment Ubuntu terbaru
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2  # Checkout repository
+      uses: actions/checkout@v2  # Checkout repository untuk mengakses file
 
     - name: Set up Python
-      uses: actions/setup-python@v2  # Menggunakan versi Python terbaru
+      uses: actions/setup-python@v2  # Menggunakan Python versi 3.9
       with:
-        python-version: '3.9'  # Atur versi Python yang sesuai
+        python-version: '3.9'  # Versi Python yang akan digunakan
 
     - name: Install dependencies
       run: |
         pip install yt-dlp  # Menginstal yt-dlp untuk mendownload video
+        pip install --upgrade gitpython  # Jika perlu untuk git push di skrip
 
     - name: Run video URL fetcher script
       env:
         YT_COOKIE: ${{ secrets.YT_COOKIE }}  # Cookie disimpan di GitHub Secrets
       run: |
-        python3 fetch_mp4_urls.py  # Ganti dengan nama skrip Python kamu
+        python3 fetch_mp4_urls.py  # Menjalankan skrip Python untuk mengambil video URL
