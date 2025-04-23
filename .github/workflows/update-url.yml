@@ -26,4 +26,4 @@ jobs:
       env:
         YT_COOKIE: ${{ secrets.YT_COOKIE }}  # Cookie disimpan di GitHub Secrets
       run: |
-        python3 your_script.py  # Ganti dengan nama skrip Python kamu
+        python3 fetch_mp4_urls.py  # Ganti dengan nama skrip Python kamu
