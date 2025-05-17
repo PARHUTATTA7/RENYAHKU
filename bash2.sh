@@ -54,14 +54,18 @@ while IFS=" " read -r name url; do
   log "[✓] URL streaming disimpan: ${safe_name}.m3u8.txt"
 done < "$URL_FILE"
 
-# === Git Push Aman ===
 cd "$OUTPUT_DIR"
 git config user.email "actions@github.com"
 git config user.name "GitHub Actions"
 
 git add .
 git commit -m "Update dari ${REPO_NAME}/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')" || echo "[i] Tidak ada perubahan untuk commit"
+
+# Pastikan tidak ada perubahan luar yang mengganggu
+git stash push --include-untracked --message "temp-stash" || true
 git pull --rebase origin master
+git stash pop || true
+
 git push origin master || {
   echo "[!] Push gagal, coba ulang setelah rebase"
   git pull --rebase origin master
