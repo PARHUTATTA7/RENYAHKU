@@ -3,7 +3,7 @@ name: Jalankan Bash dari Repo Publik
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */5 * * *'  # Setiap 5 jam
+    - cron: '0 */4 * * *'  # Setiap 4 jam
 
 jobs:
   run:
