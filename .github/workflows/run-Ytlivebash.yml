@@ -1,0 +1,46 @@
+name: Jalankan Bash2 untuk M3U8
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 * * * *'  # Setiap 1 jam penuh (00:00, 01:00, dst)
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo publik
+      - name: Checkout Repo Publik
+        uses: actions/checkout@v4
+
+      # 2. Install dependensi
+      - name: Install yt-dlp dan jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          pip install -U yt-dlp
+
+      # 3. Clone repo privat (untuk ambil cookies & urls_live.txt)
+      - name: Ambil cookies.txt dan urls_live.txt dari repo privat
+        run: |
+          git clone https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
+          cp private/cookies.txt $HOME/cookies.txt
+          cp private/urls_live.txt $HOME/urls_live.txt
+
+      # 4. Jalankan bash2.sh
+      - name: Jalankan Bash2
+        run: |
+          chmod +x bash2.sh
+          OUTPUT_DIR="${GITHUB_WORKSPACE}/output" ./bash2.sh
+
+      # 5. Commit dan push hasil
+      - name: Commit dan Push
+        run: |
+          cd output
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Update dari ${GITHUB_REPOSITORY}/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')" || echo "Tidak ada perubahan"
+          git pull --rebase origin master
+          git push origin master || echo "Push gagal setelah rebase"
