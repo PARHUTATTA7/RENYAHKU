@@ -45,7 +45,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Tidak ada perubahan"
           else
-            git commit -m "Update dari ${GITHUB_REPOSITORY}/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+            git commit -m "Update dari ${GITHUB_REPOSITORY}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
             git fetch origin master
             git pull --rebase --autostash origin master
             git push origin master || echo "Push gagal setelah rebase"
