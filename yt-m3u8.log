@@ -1657,3 +1657,238 @@
 [2025-05-17 11:17:05] [*] Memproses: BILION
 [2025-05-17 11:17:09] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=lKl2hlFK3gY, coba fallback best format
 [2025-05-17 11:17:11] [✓] URL streaming disimpan: BILION.m3u8.txt
+[2025-05-17 12:22:58] [*] Memproses: SHERIFFLABRADOR
+[2025-05-17 12:23:03] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=f3SvZCRBFto, coba fallback best format
+[2025-05-17 12:23:05] [✓] URL streaming disimpan: SHERIFFLABRADOR.m3u8.txt
+[2025-05-17 12:23:05] [*] Memproses: DISNEY
+[2025-05-17 12:23:07] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@DisneyJunior/live
+[2025-05-17 12:23:07] [*] Memproses: DODOBE
+[2025-05-17 12:23:11] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=wybasT5kalo, coba fallback best format
+[2025-05-17 12:23:13] [✓] URL streaming disimpan: DODOBE.m3u8.txt
+[2025-05-17 12:23:13] [*] Memproses: SAUNTHESHEEP
+[2025-05-17 12:23:18] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=4hYUpC7fqtE, coba fallback best format
+[2025-05-17 12:23:19] [✓] URL streaming disimpan: SAUNTHESHEEP.m3u8.txt
+[2025-05-17 12:23:19] [*] Memproses: ROBOCAR
+[2025-05-17 12:23:24] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=Yb-Fm_zRWMA, coba fallback best format
+[2025-05-17 12:23:26] [✓] URL streaming disimpan: ROBOCAR.m3u8.txt
+[2025-05-17 12:23:26] [*] Memproses: ANAKISLAMI1
+[2025-05-17 12:23:30] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=7v0VyUCTydc, coba fallback best format
+[2025-05-17 12:23:32] [✓] URL streaming disimpan: ANAKISLAMI1.m3u8.txt
+[2025-05-17 12:23:32] [*] Memproses: ANAKISLAMI2
+[2025-05-17 12:23:37] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=teYngzOxbGY, coba fallback best format
+[2025-05-17 12:23:38] [✓] URL streaming disimpan: ANAKISLAMI2.m3u8.txt
+[2025-05-17 12:23:38] [*] Memproses: ANAKISLAMI3
+[2025-05-17 12:23:39] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@kastarisentra/live
+[2025-05-17 12:23:39] [*] Memproses: BINGINDO
+[2025-05-17 12:23:44] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=hEXTQR68zOk, coba fallback best format
+[2025-05-17 12:23:46] [✓] URL streaming disimpan: BINGINDO.m3u8.txt
+[2025-05-17 12:23:46] [*] Memproses: DIVAD1
+[2025-05-17 12:23:47] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@divatheseries/live
+[2025-05-17 12:23:47] [*] Memproses: LIACHA
+[2025-05-17 12:23:48] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@LiaChaCha_ID/live
+[2025-05-17 12:23:48] [*] Memproses: KEDOOT
+[2025-05-17 12:23:53] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=Hao0-UEny-s, coba fallback best format
+[2025-05-17 12:23:55] [✓] URL streaming disimpan: KEDOOT.m3u8.txt
+[2025-05-17 12:23:55] [*] Memproses: ALANB
+[2025-05-17 12:23:59] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=CYhGhs0Ismk, coba fallback best format
+[2025-05-17 12:24:01] [✓] URL streaming disimpan: ALANB.m3u8.txt
+[2025-05-17 12:24:01] [*] Memproses: FARMESS
+[2025-05-17 12:24:05] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=5NGGmnsLPBg, coba fallback best format
+[2025-05-17 12:24:07] [✓] URL streaming disimpan: FARMESS.m3u8.txt
+[2025-05-17 12:24:07] [*] Memproses: RAINBOO
+[2025-05-17 12:24:12] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=xMYnx-4xvQo, coba fallback best format
+[2025-05-17 12:24:14] [✓] URL streaming disimpan: RAINBOO.m3u8.txt
+[2025-05-17 12:24:14] [*] Memproses: LTEELANGLE
+[2025-05-17 12:24:15] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@BeepBeepNurseryRhymes/live
+[2025-05-17 12:24:15] [*] Memproses: LEOSP
+[2025-05-17 12:24:16] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@LeoSiPenjagaAlam/live
+[2025-05-17 12:24:16] [*] Memproses: BABYBUUS
+[2025-05-17 12:24:21] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=OaSKNaUTJZc, coba fallback best format
+[2025-05-17 12:24:23] [✓] URL streaming disimpan: BABYBUUS.m3u8.txt
+[2025-05-17 12:24:23] [*] Memproses: DESNEYJ
+[2025-05-17 12:24:28] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=z_cIiCi93Ss, coba fallback best format
+[2025-05-17 12:24:30] [✓] URL streaming disimpan: DESNEYJ.m3u8.txt
+[2025-05-17 12:24:30] [*] Memproses: BLUE
+[2025-05-17 12:24:34] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=DWKOlPSNJGQ, coba fallback best format
+[2025-05-17 12:24:36] [✓] URL streaming disimpan: BLUE.m3u8.txt
+[2025-05-17 12:24:36] [*] Memproses: PJMASK
+[2025-05-17 12:24:41] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=Deb4YNvAeAI, coba fallback best format
+[2025-05-17 12:24:43] [✓] URL streaming disimpan: PJMASK.m3u8.txt
+[2025-05-17 12:24:43] [*] Memproses: SPONGBOB
+[2025-05-17 12:24:48] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=3_3GgdcPX5M, coba fallback best format
+[2025-05-17 12:24:49] [✓] URL streaming disimpan: SPONGBOB.m3u8.txt
+[2025-05-17 12:24:49] [*] Memproses: BOBAA
+[2025-05-17 12:24:54] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=AeA8GolazH8, coba fallback best format
+[2025-05-17 12:24:56] [✓] URL streaming disimpan: BOBAA.m3u8.txt
+[2025-05-17 12:24:56] [*] Memproses: BABYTV
+[2025-05-17 12:25:01] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=4rZj9odIyKo, coba fallback best format
+[2025-05-17 12:25:03] [✓] URL streaming disimpan: BABYTV.m3u8.txt
+[2025-05-17 12:25:03] [*] Memproses: HOHOP
+[2025-05-17 12:25:07] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=gaub8WtXVB4, coba fallback best format
+[2025-05-17 12:25:09] [✓] URL streaming disimpan: HOHOP.m3u8.txt
+[2025-05-17 12:25:09] [*] Memproses: SEMUT1
+[2025-05-17 12:25:14] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=duy8abO0HYs, coba fallback best format
+[2025-05-17 12:25:16] [✓] URL streaming disimpan: SEMUT1.m3u8.txt
+[2025-05-17 12:25:16] [*] Memproses: PEPPA
+[2025-05-17 12:25:20] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=qQV10okl3yY, coba fallback best format
+[2025-05-17 12:25:22] [✓] URL streaming disimpan: PEPPA.m3u8.txt
+[2025-05-17 12:25:22] [*] Memproses: LOCONUT
+[2025-05-17 12:25:27] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=wvAnMtfDykY, coba fallback best format
+[2025-05-17 12:25:29] [✓] URL streaming disimpan: LOCONUT.m3u8.txt
+[2025-05-17 12:25:29] [*] Memproses: SIMPLES
+[2025-05-17 12:25:30] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@TobyandFriendsKidsSongs/live
+[2025-05-17 12:25:30] [*] Memproses: NANTOON
+[2025-05-17 12:25:35] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=sMLuulM-l8U, coba fallback best format
+[2025-05-17 12:25:37] [✓] URL streaming disimpan: NANTOON.m3u8.txt
+[2025-05-17 12:25:37] [*] Memproses: MASHAMB1
+[2025-05-17 12:25:37] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@MashaBearINDONESIA/live
+[2025-05-17 12:25:37] [*] Memproses: MASHAMB2
+[2025-05-17 12:25:43] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=LBNKUirXRgM, coba fallback best format
+[2025-05-17 12:25:45] [✓] URL streaming disimpan: MASHAMB2.m3u8.txt
+[2025-05-17 12:25:45] [*] Memproses: TALKT
+[2025-05-17 12:25:49] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=c890cnc0U20, coba fallback best format
+[2025-05-17 12:25:51] [✓] URL streaming disimpan: TALKT.m3u8.txt
+[2025-05-17 12:25:51] [*] Memproses: HUMTY
+[2025-05-17 12:25:52] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@ChuChuTV/live
+[2025-05-17 12:25:52] [*] Memproses: NICKJR
+[2025-05-17 12:25:57] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=6NMU7wBTs1c, coba fallback best format
+[2025-05-17 12:25:59] [✓] URL streaming disimpan: NICKJR.m3u8.txt
+[2025-05-17 12:25:59] [*] Memproses: PATROL
+[2025-05-17 12:26:04] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=Ui_6vrFvqRI, coba fallback best format
+[2025-05-17 12:26:06] [✓] URL streaming disimpan: PATROL.m3u8.txt
+[2025-05-17 12:26:06] [*] Memproses: TAYOB
+[2025-05-17 12:26:11] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=JsxQpzmpjqg, coba fallback best format
+[2025-05-17 12:26:13] [✓] URL streaming disimpan: TAYOB.m3u8.txt
+[2025-05-17 12:26:13] [*] Memproses: LARVA
+[2025-05-17 12:26:14] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@larvacartoonvietnam6214/live
+[2025-05-17 12:26:14] [*] Memproses: NICKELODEON
+[2025-05-17 12:26:19] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=7ZlpCM4WtMI, coba fallback best format
+[2025-05-17 12:26:21] [✓] URL streaming disimpan: NICKELODEON.m3u8.txt
+[2025-05-17 12:26:21] [*] Memproses: COCOBI
+[2025-05-17 12:26:26] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=d0xf5rUyksA, coba fallback best format
+[2025-05-17 12:26:28] [✓] URL streaming disimpan: COCOBI.m3u8.txt
+[2025-05-17 12:26:28] [*] Memproses: DYNEI
+[2025-05-17 12:26:32] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=JciAjHgMib4, coba fallback best format
+[2025-05-17 12:26:34] [✓] URL streaming disimpan: DYNEI.m3u8.txt
+[2025-05-17 12:26:34] [*] Memproses: JONYTONY
+[2025-05-17 12:26:39] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=_ZYypJyLJRY, coba fallback best format
+[2025-05-17 12:26:41] [✓] URL streaming disimpan: JONYTONY.m3u8.txt
+[2025-05-17 12:26:41] [*] Memproses: CARTUNITO
+[2025-05-17 12:26:46] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=p5l3ZS1jVUE, coba fallback best format
+[2025-05-17 12:26:48] [✓] URL streaming disimpan: CARTUNITO.m3u8.txt
+[2025-05-17 12:26:48] [*] Memproses: KIYAK
+[2025-05-17 12:26:52] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=8hfR6A7XrL0, coba fallback best format
+[2025-05-17 12:26:54] [✓] URL streaming disimpan: KIYAK.m3u8.txt
+[2025-05-17 12:26:54] [*] Memproses: MAYAM
+[2025-05-17 12:26:59] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=VBt2Fm5a_KE, coba fallback best format
+[2025-05-17 12:27:01] [✓] URL streaming disimpan: MAYAM.m3u8.txt
+[2025-05-17 12:27:01] [*] Memproses: JOLLYNF
+[2025-05-17 12:27:05] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=i6Qcham3flw, coba fallback best format
+[2025-05-17 12:27:07] [✓] URL streaming disimpan: JOLLYNF.m3u8.txt
+[2025-05-17 12:27:07] [*] Memproses: EARTHB
+[2025-05-17 12:27:11] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=hTHld3T7NA0, coba fallback best format
+[2025-05-17 12:27:13] [✓] URL streaming disimpan: EARTHB.m3u8.txt
+[2025-05-17 12:27:13] [*] Memproses: EARTHC
+[2025-05-17 12:27:18] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=iws3rh5vLAQ, coba fallback best format
+[2025-05-17 12:27:19] [✓] URL streaming disimpan: EARTHC.m3u8.txt
+[2025-05-17 12:27:19] [*] Memproses: EARTHR
+[2025-05-17 12:27:23] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=z7SiAaN4ogw, coba fallback best format
+[2025-05-17 12:27:25] [✓] URL streaming disimpan: EARTHR.m3u8.txt
+[2025-05-17 12:27:25] [*] Memproses: NATGEO
+[2025-05-17 12:27:30] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=bbLjL08m-mY, coba fallback best format
+[2025-05-17 12:27:31] [✓] URL streaming disimpan: NATGEO.m3u8.txt
+[2025-05-17 12:27:31] [*] Memproses: NATWILD
+[2025-05-17 12:27:33] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/watch?v=BJ3Yv572V1A
+[2025-05-17 12:27:33] [*] Memproses: ONECHMP
+[2025-05-17 12:27:33] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@ONEChampionship/live
+[2025-05-17 12:27:33] [*] Memproses: ESPORT1
+[2025-05-17 12:27:38] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=tNaWW-h89dA, coba fallback best format
+[2025-05-17 12:27:39] [✓] URL streaming disimpan: ESPORT1.m3u8.txt
+[2025-05-17 12:27:39] [*] Memproses: ESPORT2
+[2025-05-17 12:27:42] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@pubgmobileid/live
+[2025-05-17 12:27:42] [*] Memproses: ESPORT3
+[2025-05-17 12:27:46] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=_Q3mKSeKGJs, coba fallback best format
+[2025-05-17 12:27:48] [✓] URL streaming disimpan: ESPORT3.m3u8.txt
+[2025-05-17 12:27:48] [*] Memproses: ESPORT4
+[2025-05-17 12:27:49] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@PUBGMOBILEEsports/live
+[2025-05-17 12:27:49] [*] Memproses: ESPORT5
+[2025-05-17 12:27:50] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@ValorantEsports/live
+[2025-05-17 12:27:50] [*] Memproses: ESPORT6
+[2025-05-17 12:27:51] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@ESLDota2/live
+[2025-05-17 12:27:51] [*] Memproses: ESPORT7
+[2025-05-17 12:27:55] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=zlGcACsJUNc, coba fallback best format
+[2025-05-17 12:27:57] [✓] URL streaming disimpan: ESPORT7.m3u8.txt
+[2025-05-17 12:27:57] [*] Memproses: ESPORT8
+[2025-05-17 12:27:58] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/sarcastic_esport19/live
+[2025-05-17 12:27:58] [*] Memproses: MUSIKINDO
+[2025-05-17 12:28:03] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=U4Ux0ePA_2U, coba fallback best format
+[2025-05-17 12:28:05] [✓] URL streaming disimpan: MUSIKINDO.m3u8.txt
+[2025-05-17 12:28:05] [*] Memproses: POPINDO1
+[2025-05-17 12:28:09] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=XSh7VvuIXvI, coba fallback best format
+[2025-05-17 12:28:11] [✓] URL streaming disimpan: POPINDO1.m3u8.txt
+[2025-05-17 12:28:11] [*] Memproses: KOPLO1
+[2025-05-17 12:28:15] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=wYljHwINTkU, coba fallback best format
+[2025-05-17 12:28:17] [✓] URL streaming disimpan: KOPLO1.m3u8.txt
+[2025-05-17 12:28:17] [*] Memproses: BARAT1
+[2025-05-17 12:28:21] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=VOy2RBWYCYI, coba fallback best format
+[2025-05-17 12:28:23] [✓] URL streaming disimpan: BARAT1.m3u8.txt
+[2025-05-17 12:28:23] [*] Memproses: RELAX1
+[2025-05-17 12:28:28] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=O2lmYoQnkKk, coba fallback best format
+[2025-05-17 12:28:29] [✓] URL streaming disimpan: RELAX1.m3u8.txt
+[2025-05-17 12:28:29] [*] Memproses: REMIX1
+[2025-05-17 12:28:30] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@ApriNaLdyMusicRemix/live
+[2025-05-17 12:28:30] [*] Memproses: DJKA1
+[2025-05-17 12:28:31] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@matamusik_id/live
+[2025-05-17 12:28:31] [*] Memproses: BARAT2
+[2025-05-17 12:28:36] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=Q6HCFJLb7ks, coba fallback best format
+[2025-05-17 12:28:38] [✓] URL streaming disimpan: BARAT2.m3u8.txt
+[2025-05-17 12:28:38] [*] Memproses: BOLLIW
+[2025-05-17 12:28:39] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@HindiloveHits6688/live
+[2025-05-17 12:28:39] [*] Memproses: MUSKLIVE
+[2025-05-17 12:28:43] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=7nfhHhCCmjA, coba fallback best format
+[2025-05-17 12:28:45] [✓] URL streaming disimpan: MUSKLIVE.m3u8.txt
+[2025-05-17 12:28:45] [*] Memproses: MUSICAS
+[2025-05-17 12:28:49] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=XSh7VvuIXvI, coba fallback best format
+[2025-05-17 12:28:51] [✓] URL streaming disimpan: MUSICAS.m3u8.txt
+[2025-05-17 12:28:51] [*] Memproses: RADUIOHITS
+[2025-05-17 12:28:51] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@LiveMusicRadio/live
+[2025-05-17 12:28:51] [*] Memproses: SONYM
+[2025-05-17 12:28:56] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=U4Ux0ePA_2U, coba fallback best format
+[2025-05-17 12:28:58] [✓] URL streaming disimpan: SONYM.m3u8.txt
+[2025-05-17 12:28:58] [*] Memproses: TVONE1
+[2025-05-17 12:29:02] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=yNKvkPJl-tg, coba fallback best format
+[2025-05-17 12:29:03] [✓] URL streaming disimpan: TVONE1.m3u8.txt
+[2025-05-17 12:29:03] [*] Memproses: METROTV1
+[2025-05-17 12:29:07] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=-CwtcKDaaLA, coba fallback best format
+[2025-05-17 12:29:09] [✓] URL streaming disimpan: METROTV1.m3u8.txt
+[2025-05-17 12:29:09] [*] Memproses: KOMPASS1
+[2025-05-17 12:29:13] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=DOOrIxw5xOw, coba fallback best format
+[2025-05-17 12:29:15] [✓] URL streaming disimpan: KOMPASS1.m3u8.txt
+[2025-05-17 12:29:15] [*] Memproses: SHOLAWAT1
+[2025-05-17 12:29:19] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=RBZq3Ea4xJA, coba fallback best format
+[2025-05-17 12:29:21] [✓] URL streaming disimpan: SHOLAWAT1.m3u8.txt
+[2025-05-17 12:29:21] [*] Memproses: MEKKAHL
+[2025-05-17 12:29:25] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=Rx5rwj7WGr0, coba fallback best format
+[2025-05-17 12:29:27] [✓] URL streaming disimpan: MEKKAHL.m3u8.txt
+[2025-05-17 12:29:27] [*] Memproses: MADINAHL
+[2025-05-17 12:29:32] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=Cw6mSasHCaw, coba fallback best format
+[2025-05-17 12:29:33] [✓] URL streaming disimpan: MADINAHL.m3u8.txt
+[2025-05-17 12:29:33] [*] Memproses: FATWAL
+[2025-05-17 12:29:37] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=JJOlaGxOMIc, coba fallback best format
+[2025-05-17 12:29:39] [✓] URL streaming disimpan: FATWAL.m3u8.txt
+[2025-05-17 12:29:39] [*] Memproses: NAMAH
+[2025-05-17 12:29:43] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=1VyLaWYmbhU, coba fallback best format
+[2025-05-17 12:29:45] [✓] URL streaming disimpan: NAMAH.m3u8.txt
+[2025-05-17 12:29:45] [*] Memproses: POORO1
+[2025-05-17 12:29:46] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@pororosipenguinkecil/live
+[2025-05-17 12:29:46] [*] Memproses: UPIPN
+[2025-05-17 12:29:47] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@lescopaque/live
+[2025-05-17 12:29:47] [*] Memproses: OGYL
+[2025-05-17 12:29:52] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=4fs42tPscuo, coba fallback best format
+[2025-05-17 12:29:54] [✓] URL streaming disimpan: OGYL.m3u8.txt
+[2025-05-17 12:29:54] [*] Memproses: TOMJER
+[2025-05-17 12:29:58] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=_XeGYNTiuSM, coba fallback best format
+[2025-05-17 12:30:00] [✓] URL streaming disimpan: TOMJER.m3u8.txt
+[2025-05-17 12:30:00] [*] Memproses: BILION
+[2025-05-17 12:30:05] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=lKl2hlFK3gY, coba fallback best format
+[2025-05-17 12:30:07] [✓] URL streaming disimpan: BILION.m3u8.txt
