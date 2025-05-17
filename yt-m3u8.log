@@ -6,3 +6,8 @@
 [2025-05-17 04:02:41] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=f3SvZCRBFto
 [2025-05-17 04:02:41] [*] Memproses: DISNEY
 [2025-05-17 04:02:42] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@DisneyJunior/live
+[2025-05-17 04:10:23] [*] Memproses: SHERIFFLABRADOR
+[2025-05-17 04:10:29] [!] Gagal ambil URL .m3u8 untuk: https://www.youtube.com/watch?v=f3SvZCRBFto, coba fallback best format
+[2025-05-17 04:10:31] [✓] URL streaming disimpan: SHERIFFLABRADOR.m3u8.txt
+[2025-05-17 04:10:31] [*] Memproses: DISNEY
+[2025-05-17 04:10:32] [!] Tidak bisa resolve video ID dari: https://www.youtube.com/@DisneyJunior/live
