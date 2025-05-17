@@ -61,16 +61,19 @@ cd "$OUTPUT_DIR"
 git config user.email "actions@github.com"
 git config user.name "GitHub Actions"
 
-git add .
-git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || echo "[i] Tidak ada perubahan untuk commit"
+# Hanya add file yang ada di dalam folder ini saja
+git add . || true
 
-# Pastikan tidak ada perubahan luar yang mengganggu
-git stash push --include-untracked --message "temp-stash" || true
-git pull --rebase origin master
-git stash pop || true
+# Commit jika ada perubahan di folder output
+if ! git diff --cached --quiet; then
+  git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+else
+  echo "[i] Tidak ada perubahan untuk commit"
+fi
 
-git push origin master || {
-  echo "[!] Push gagal, coba ulang setelah rebase"
-  git pull --rebase origin master
-  git push origin master || echo "[x] Gagal push setelah retry"
-}
+# Pull tanpa rebase jika tidak butuh sinkron master utama (karena hanya push data)
+git fetch origin master
+git merge --strategy=ours origin/master || true
+
+# Push
+git push origin master || echo "[x] Gagal push"
