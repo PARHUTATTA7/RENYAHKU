@@ -40,7 +40,13 @@ jobs:
           cd output
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
           git add .
-          git commit -m "Update dari ${GITHUB_REPOSITORY}/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')" || echo "Tidak ada perubahan"
-          git pull --rebase origin master
-          git push origin master || echo "Push gagal setelah rebase"
+          if git diff --cached --quiet; then
+            echo "Tidak ada perubahan"
+          else
+            git commit -m "Update dari ${GITHUB_REPOSITORY}/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+            git fetch origin master
+            git pull --rebase --autostash origin master
+            git push origin master || echo "Push gagal setelah rebase"
+          fi
