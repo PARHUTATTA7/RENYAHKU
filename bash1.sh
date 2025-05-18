@@ -60,19 +60,22 @@ cd "$OUTPUT_DIR" || exit 1
 git config user.email "actions@github.com"
 git config user.name "GitHub Actions"
 
-# Hanya add file yang ada di dalam folder ini saja
-git add . || { log "[!] Gagal menambahkan file ke git"; exit 1; }
+# Tambahkan hanya file .txt/.html/.m3u
+find . -maxdepth 1 -type f \( -name "*.txt" -o -name "*.m3u" -o -name "*.html" \) -exec git add {} + || {
+  log "[!] Gagal menambahkan file hasil ke git"
+  exit 1
+}
 
-# Commit jika ada perubahan di folder output
+# Commit jika ada perubahan
 if ! git diff --cached --quiet; then
-  git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || { log "[!] Gagal melakukan commit"; exit 1; }
+  git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || {
+    log "[!] Gagal melakukan commit"
+    exit 1
+  }
 else
   log "[i] Tidak ada perubahan untuk commit"
 fi
 
-# Pull tanpa rebase jika tidak butuh sinkron master utama (karena hanya push data)
-git fetch origin master
-git merge --strategy=ours origin/master || { log "[!] Gagal melakukan merge"; exit 1; }
-
-# Push
-git push origin master || { log "[!] Gagal push ke remote"; exit 1; }
+# Pull dan push
+git pull --rebase origin master || log "[!] Gagal rebase, lanjut push saja"
+git push origin master || log "[!] Gagal push ke remote"
