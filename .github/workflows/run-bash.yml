@@ -3,7 +3,7 @@ name: Jalankan Bash dari Repo Publik
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */5 * * *'  # Setiap 4 jam
+    - cron: '0 */5 * * *'  # Setiap 5 jam
 
 jobs:
   run:
@@ -35,11 +35,12 @@ jobs:
           ./bash1.sh
 
       # 5. Commit dan push hasil (jika ada perubahan)
+     # 5. Commit dan Push Hasil (versi aman)
       - name: Commit dan Push Hasil
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Update dari ${GITHUB_REPOSITORY}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || echo "Tidak ada perubahan"
-          git pull --rebase origin master || true
-          git push origin master || echo "Gagal push setelah rebase"
+           git config user.name "github-actions[bot]"
+           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+           git add '*.txt' || true
+           git commit -m "Update dari ${GITHUB_REPOSITORY}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || echo "Tidak ada perubahan"
+           git pull --rebase origin master || true
+           git push origin master || echo "Gagal push setelah rebase"
