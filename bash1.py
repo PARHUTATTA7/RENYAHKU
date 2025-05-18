@@ -7,8 +7,7 @@ REPO_NAME = "RENYAHKU"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
 COOKIES_FILE = os.path.expanduser("~/cookies.txt")
 URL_FILE = os.path.expanduser("~/urls.txt")
-ROOT_DIR = Path(os.getcwd())
-LOG_FILE = ROOT_DIR / "yt-download.log"
+LOG_FILE = Path("yt-download.log")
 
 def log(msg):
     timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -32,12 +31,8 @@ def get_yt_dlp_output(url, format_code="18"):
             "yt-dlp", "--cookies", COOKIES_FILE,
             "--user-agent", USER_AGENT, "-g", "-f", format_code, url
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        if result.returncode == 0:
-            return result.stdout.strip()
-        else:
-            log(f"[!] yt-dlp gagal dengan kode {result.returncode} untuk {url}")
-            return ""
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return result.stdout.strip()
     except Exception as e:
         log(f"[!] yt-dlp error: {e}")
         return ""
@@ -54,7 +49,6 @@ def process_urls():
             try:
                 name, url = line.strip().split(None, 1)
             except ValueError:
-                log(f"[!] Baris tidak valid: {line.strip()}")
                 continue
 
             safe_name = "".join(c for c in name if c.isalnum() or c in "_.-")
@@ -66,28 +60,21 @@ def process_urls():
                     "--user-agent", USER_AGENT,
                     "-j", "--flat-playlist", url
                 ]
-                try:
-                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-                    if result.returncode != 0:
-                        log(f"[!] Gagal ambil daftar playlist untuk: {url}")
-                        continue
-                    for line_pl in result.stdout.strip().splitlines():
-                        if '"id":' in line_pl:
-                            vid = line_pl.split('"id":')[1].split('"')[1]
-                            direct_url = get_yt_dlp_output(f"https://www.youtube.com/watch?v={vid}")
-                            if direct_url:
-                                filename = ROOT_DIR / f"{safe_name}_{vid}.txt"
-                                filename.write_text(direct_url)
-                                log(f"[✓] URL MP4 dari playlist disimpan: {filename.name}")
-                            else:
-                                log(f"[!] Gagal ambil video MP4 dari playlist ({vid})")
-                except Exception as e:
-                    log(f"[!] Exception saat proses playlist: {e}")
-
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                for line in result.stdout.strip().splitlines():
+                    if '"id":' in line:
+                        vid = line.split('"id":')[1].split('"')[1]
+                        direct_url = get_yt_dlp_output(f"https://www.youtube.com/watch?v={vid}")
+                        if direct_url:
+                            filename = Path(f"{safe_name}_{vid}.txt")
+                            filename.write_text(direct_url)
+                            log(f"[✓] URL dari playlist disimpan: {filename.name}")
+                        else:
+                            log(f"[!] Gagal ambil video dari playlist ({vid})")
             else:
                 direct_url = get_yt_dlp_output(url)
                 if direct_url:
-                    filename = ROOT_DIR / f"{safe_name}.txt"
+                    filename = Path(f"{safe_name}.txt")
                     filename.write_text(direct_url)
                     log(f"[✓] URL MP4 disimpan: {filename.name}")
                 else:
