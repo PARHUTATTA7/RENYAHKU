@@ -429,3 +429,155 @@
 [2025-05-18 01:58:06] [*] Memproses: BELAJAR6
 [2025-05-18 01:59:06] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=JiAavHAksgw&list=PLqHiEtyjI0zwq1TOms-sTIyYJrpkKkRC1']' timed out after 60 seconds
 [2025-05-18 01:59:06] [!] Gagal ambil URL (itag=18) untuk: https://www.youtube.com/watch?v=JiAavHAksgw&list=PLqHiEtyjI0zwq1TOms-sTIyYJrpkKkRC1
+[2025-05-18 02:44:45] [*] Memproses: OMAR&HANA1
+[2025-05-18 02:44:50] [✓] URL MP4 disimpan: OMARHANA1.txt
+[2025-05-18 02:44:50] [*] Memproses: OMAR&HANA2
+[2025-05-18 02:44:54] [✓] URL MP4 disimpan: OMARHANA2.txt
+[2025-05-18 02:44:54] [*] Memproses: OMAR&HANA3
+[2025-05-18 02:44:57] [✓] URL MP4 disimpan: OMARHANA3.txt
+[2025-05-18 02:44:57] [*] Memproses: BEBEFIN
+[2025-05-18 02:45:02] [✓] URL MP4 disimpan: BEBEFIN.txt
+[2025-05-18 02:45:02] [*] Memproses: JAMANDULU1
+[2025-05-18 02:45:05] [✓] URL MP4 disimpan: JAMANDULU1.txt
+[2025-05-18 02:45:05] [*] Memproses: DYDI&FRENDS1
+[2025-05-18 02:45:09] [✓] URL MP4 disimpan: DYDIFRENDS1.txt
+[2025-05-18 02:45:09] [*] Memproses: DYDI&FRENDS2
+[2025-05-18 02:45:13] [✓] URL MP4 disimpan: DYDIFRENDS2.txt
+[2025-05-18 02:45:13] [*] Memproses: DYDI&FRENDS3
+[2025-05-18 02:45:17] [✓] URL MP4 disimpan: DYDIFRENDS3.txt
+[2025-05-18 02:45:17] [*] Memproses: POLISILABRADOR1
+[2025-05-18 02:45:21] [✓] URL MP4 disimpan: POLISILABRADOR1.txt
+[2025-05-18 02:45:21] [*] Memproses: POLISILABRADOR2
+[2025-05-18 02:45:25] [✓] URL MP4 disimpan: POLISILABRADOR2.txt
+[2025-05-18 02:45:25] [*] Memproses: POLISILABRADOR3
+[2025-05-18 02:46:25] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=ZqqLR7006Zc&list=PL_QA8QKT_jobyeKBI6ks0bLPLCD3_YoMa&index=15&pp=iAQB']' timed out after 60 seconds
+[2025-05-18 02:46:25] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=ZqqLR7006Zc&list=PL_QA8QKT_jobyeKBI6ks0bLPLCD3_YoMa&index=15&pp=iAQB
+[2025-05-18 02:46:25] [*] Memproses: POLISILABRADOR4
+[2025-05-18 02:46:29] [✓] URL MP4 disimpan: POLISILABRADOR4.txt
+[2025-05-18 02:46:29] [*] Memproses: POLISILABRADOR5
+[2025-05-18 02:46:33] [✓] URL MP4 disimpan: POLISILABRADOR5.txt
+[2025-05-18 02:46:33] [*] Memproses: POLISILABRADOR6
+[2025-05-18 02:46:37] [✓] URL MP4 disimpan: POLISILABRADOR6.txt
+[2025-05-18 02:46:37] [*] Memproses: POLISILABRADOR7
+[2025-05-18 02:47:37] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=OAtps4Qk9K8&list=PL_QA8QKT_jobyeKBI6ks0bLPLCD3_YoMa&index=43&pp=iAQB']' timed out after 60 seconds
+[2025-05-18 02:47:37] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=OAtps4Qk9K8&list=PL_QA8QKT_jobyeKBI6ks0bLPLCD3_YoMa&index=43&pp=iAQB
+[2025-05-18 02:47:37] [*] Memproses: POLISILABRADOR8
+[2025-05-18 02:48:37] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=qFCvQS1LG9Q&list=PL_QA8QKT_jobyeKBI6ks0bLPLCD3_YoMa&index=53&pp=iAQB']' timed out after 60 seconds
+[2025-05-18 02:48:37] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=qFCvQS1LG9Q&list=PL_QA8QKT_jobyeKBI6ks0bLPLCD3_YoMa&index=53&pp=iAQB
+[2025-05-18 02:48:37] [*] Memproses: SUPERWINGS1
+[2025-05-18 02:48:39] [!] yt-dlp gagal dengan kode 1 untuk https://www.youtube.com/watch?v=-OnPq6y8f7o
+[2025-05-18 02:48:39] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=-OnPq6y8f7o
+[2025-05-18 02:48:39] [*] Memproses: ROBOTTRAIN1
+[2025-05-18 02:48:43] [✓] URL MP4 disimpan: ROBOTTRAIN1.txt
+[2025-05-18 02:48:43] [*] Memproses: ROBOTTRAIN2
+[2025-05-18 02:48:46] [✓] URL MP4 disimpan: ROBOTTRAIN2.txt
+[2025-05-18 02:48:46] [*] Memproses: ROBOTTRAIN3
+[2025-05-18 02:48:50] [✓] URL MP4 disimpan: ROBOTTRAIN3.txt
+[2025-05-18 02:48:50] [*] Memproses: ROBOTTRAIN4
+[2025-05-18 02:48:54] [✓] URL MP4 disimpan: ROBOTTRAIN4.txt
+[2025-05-18 02:48:54] [*] Memproses: ROBOTTRAIN5
+[2025-05-18 02:48:58] [✓] URL MP4 disimpan: ROBOTTRAIN5.txt
+[2025-05-18 02:48:58] [*] Memproses: KATURI1
+[2025-05-18 02:49:02] [✓] URL MP4 disimpan: KATURI1.txt
+[2025-05-18 02:49:02] [*] Memproses: PORORO1
+[2025-05-18 02:50:02] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=RBitBqKcRec&list=PL_DxHH4c2zQ4ybQHckb-fE8MjAYKVOqZo']' timed out after 60 seconds
+[2025-05-18 02:50:02] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=RBitBqKcRec&list=PL_DxHH4c2zQ4ybQHckb-fE8MjAYKVOqZo
+[2025-05-18 02:50:02] [*] Memproses: PORORO2
+[2025-05-18 02:50:06] [✓] URL MP4 disimpan: PORORO2.txt
+[2025-05-18 02:50:06] [*] Memproses: PORORO3
+[2025-05-18 02:50:10] [✓] URL MP4 disimpan: PORORO3.txt
+[2025-05-18 02:50:10] [*] Memproses: NUSSARARA1
+[2025-05-18 02:50:13] [✓] URL MP4 disimpan: NUSSARARA1.txt
+[2025-05-18 02:50:13] [*] Memproses: NUSSARARA2
+[2025-05-18 02:50:17] [✓] URL MP4 disimpan: NUSSARARA2.txt
+[2025-05-18 02:50:17] [*] Memproses: NUSSARARA3
+[2025-05-18 02:50:21] [✓] URL MP4 disimpan: NUSSARARA3.txt
+[2025-05-18 02:50:21] [*] Memproses: UPIN&IPINSESION2
+[2025-05-18 02:50:25] [✓] URL MP4 disimpan: UPINIPINSESION2.txt
+[2025-05-18 02:50:25] [*] Memproses: UPIN&IPINSESION3
+[2025-05-18 02:50:29] [✓] URL MP4 disimpan: UPINIPINSESION3.txt
+[2025-05-18 02:50:29] [*] Memproses: UPIN&IPINSESION4
+[2025-05-18 02:50:32] [✓] URL MP4 disimpan: UPINIPINSESION4.txt
+[2025-05-18 02:50:32] [*] Memproses: UPIN&IPINSESION5
+[2025-05-18 02:50:36] [✓] URL MP4 disimpan: UPINIPINSESION5.txt
+[2025-05-18 02:50:36] [*] Memproses: UPIN&IPINSESION6
+[2025-05-18 02:50:40] [✓] URL MP4 disimpan: UPINIPINSESION6.txt
+[2025-05-18 02:50:40] [*] Memproses: UPIN&IPINSESION7
+[2025-05-18 02:50:44] [✓] URL MP4 disimpan: UPINIPINSESION7.txt
+[2025-05-18 02:50:44] [*] Memproses: UPIN&IPINSESION8
+[2025-05-18 02:50:48] [✓] URL MP4 disimpan: UPINIPINSESION8.txt
+[2025-05-18 02:50:48] [*] Memproses: UPIN&IPINSESION9
+[2025-05-18 02:50:52] [✓] URL MP4 disimpan: UPINIPINSESION9.txt
+[2025-05-18 02:50:52] [*] Memproses: UPIN&IPINSESION10
+[2025-05-18 02:50:56] [✓] URL MP4 disimpan: UPINIPINSESION10.txt
+[2025-05-18 02:50:56] [*] Memproses: UPIN&IPINSESION11
+[2025-05-18 02:50:59] [✓] URL MP4 disimpan: UPINIPINSESION11.txt
+[2025-05-18 02:50:59] [*] Memproses: UPIN&IPINSESION12
+[2025-05-18 02:51:03] [✓] URL MP4 disimpan: UPINIPINSESION12.txt
+[2025-05-18 02:51:03] [*] Memproses: UPIN&IPINSESION13
+[2025-05-18 02:51:07] [✓] URL MP4 disimpan: UPINIPINSESION13.txt
+[2025-05-18 02:51:07] [*] Memproses: UPIN&IPINSESION14
+[2025-05-18 02:51:11] [✓] URL MP4 disimpan: UPINIPINSESION14.txt
+[2025-05-18 02:51:11] [*] Memproses: UPIN&IPINSESION15
+[2025-05-18 02:51:14] [✓] URL MP4 disimpan: UPINIPINSESION15.txt
+[2025-05-18 02:51:14] [*] Memproses: UPIN&IPINSESION16
+[2025-05-18 02:51:18] [✓] URL MP4 disimpan: UPINIPINSESION16.txt
+[2025-05-18 02:51:18] [*] Memproses: UPIN&IPINSESION17
+[2025-05-18 02:51:22] [✓] URL MP4 disimpan: UPINIPINSESION17.txt
+[2025-05-18 02:51:22] [*] Memproses: UPIN&IPINSESION18
+[2025-05-18 02:51:26] [✓] URL MP4 disimpan: UPINIPINSESION18.txt
+[2025-05-18 02:51:26] [*] Memproses: UPIN&IPINSESION19
+[2025-05-18 02:51:30] [✓] URL MP4 disimpan: UPINIPINSESION19.txt
+[2025-05-18 02:51:30] [*] Memproses: UPIN&IPINSESION191
+[2025-05-18 02:51:34] [✓] URL MP4 disimpan: UPINIPINSESION191.txt
+[2025-05-18 02:51:34] [*] Memproses: UPIN&IPINSESION192
+[2025-05-18 02:51:38] [✓] URL MP4 disimpan: UPINIPINSESION192.txt
+[2025-05-18 02:51:38] [*] Memproses: UPIN&IPINSESION193
+[2025-05-18 02:51:42] [✓] URL MP4 disimpan: UPINIPINSESION193.txt
+[2025-05-18 02:51:42] [*] Memproses: JAMANDULU2
+[2025-05-18 02:52:42] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=YU-Rit_VN04&list=PLLQoIst01CaXoNrLogHiHncjpxvmb7bbQ']' timed out after 60 seconds
+[2025-05-18 02:52:42] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=YU-Rit_VN04&list=PLLQoIst01CaXoNrLogHiHncjpxvmb7bbQ
+[2025-05-18 02:52:42] [*] Memproses: WARKOPDKI
+[2025-05-18 02:53:07] [✓] URL MP4 disimpan: WARKOPDKI.txt
+[2025-05-18 02:53:07] [*] Memproses: BOBOIBOYMUSIM1
+[2025-05-18 02:53:11] [✓] URL MP4 disimpan: BOBOIBOYMUSIM1.txt
+[2025-05-18 02:53:11] [*] Memproses: BOBOIBOYMUSIM2
+[2025-05-18 02:53:15] [✓] URL MP4 disimpan: BOBOIBOYMUSIM2.txt
+[2025-05-18 02:53:15] [*] Memproses: BOBOIBOYMUSIM3
+[2025-05-18 02:53:19] [✓] URL MP4 disimpan: BOBOIBOYMUSIM3.txt
+[2025-05-18 02:53:19] [*] Memproses: BOBOIBOYMOVIE1
+[2025-05-18 02:53:23] [✓] URL MP4 disimpan: BOBOIBOYMOVIE1.txt
+[2025-05-18 02:53:23] [*] Memproses: BOBOIBOYMOVIE2
+[2025-05-18 02:53:27] [✓] URL MP4 disimpan: BOBOIBOYMOVIE2.txt
+[2025-05-18 02:53:27] [*] Memproses: BOBOIBOYMOVIE3
+[2025-05-18 02:53:31] [✓] URL MP4 disimpan: BOBOIBOYMOVIE3.txt
+[2025-05-18 02:53:31] [*] Memproses: MECHAMATOMUSIM1
+[2025-05-18 02:53:35] [✓] URL MP4 disimpan: MECHAMATOMUSIM1.txt
+[2025-05-18 02:53:35] [*] Memproses: MECHAMATOMUSIM2
+[2025-05-18 02:53:39] [✓] URL MP4 disimpan: MECHAMATOMUSIM2.txt
+[2025-05-18 02:53:39] [*] Memproses: MECHAMATOMUSIM3
+[2025-05-18 02:53:42] [✓] URL MP4 disimpan: MECHAMATOMUSIM3.txt
+[2025-05-18 02:53:42] [*] Memproses: EJENALIMUSIM1
+[2025-05-18 02:54:42] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=SBVVyZQ_b5o&list=PLr7CHFmBiVDJWgDBsULSRP14sagDdOwIt']' timed out after 60 seconds
+[2025-05-18 02:54:42] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=SBVVyZQ_b5o&list=PLr7CHFmBiVDJWgDBsULSRP14sagDdOwIt
+[2025-05-18 02:54:42] [*] Memproses: EJENALIMUSIM2
+[2025-05-18 02:55:42] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=Aj0EYAJFvHE&list=PLr7CHFmBiVDJfcy4XivmYFnF9YauIiqWa']' timed out after 60 seconds
+[2025-05-18 02:55:42] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=Aj0EYAJFvHE&list=PLr7CHFmBiVDJfcy4XivmYFnF9YauIiqWa
+[2025-05-18 02:55:42] [*] Memproses: EJENALIMUSIM3
+[2025-05-18 02:56:42] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=jmww_DEbzVs&list=PLr7CHFmBiVDIoHJlfig5dost34tJ-1n3l']' timed out after 60 seconds
+[2025-05-18 02:56:42] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=jmww_DEbzVs&list=PLr7CHFmBiVDIoHJlfig5dost34tJ-1n3l
+[2025-05-18 02:56:42] [*] Memproses: BELAJAR1
+[2025-05-18 02:57:06] [✓] URL MP4 disimpan: BELAJAR1.txt
+[2025-05-18 02:57:06] [*] Memproses: BELAJAR2
+[2025-05-18 02:57:23] [✓] URL MP4 disimpan: BELAJAR2.txt
+[2025-05-18 02:57:23] [*] Memproses: BELAJAR3
+[2025-05-18 02:58:23] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=MJoQImGT5Dg&list=PL_xEpbOmi_2kVonNM-utwaMeiGTUQU_P9']' timed out after 60 seconds
+[2025-05-18 02:58:23] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=MJoQImGT5Dg&list=PL_xEpbOmi_2kVonNM-utwaMeiGTUQU_P9
+[2025-05-18 02:58:23] [*] Memproses: BELAJAR4
+[2025-05-18 02:59:23] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=XyiXp9m3bsY&list=PL_xEpbOmi_2nZK7f0HpktHZfXHlOmqbzU']' timed out after 60 seconds
+[2025-05-18 02:59:23] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=XyiXp9m3bsY&list=PL_xEpbOmi_2nZK7f0HpktHZfXHlOmqbzU
+[2025-05-18 02:59:23] [*] Memproses: BELAJAR5
+[2025-05-18 03:00:19] [✓] URL MP4 disimpan: BELAJAR5.txt
+[2025-05-18 03:00:19] [*] Memproses: BELAJAR6
+[2025-05-18 03:01:19] [!] yt-dlp error: Command '['yt-dlp', '--cookies', '/home/runner/cookies.txt', '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36', '-g', '-f', '18', 'https://www.youtube.com/watch?v=JiAavHAksgw&list=PLqHiEtyjI0zwq1TOms-sTIyYJrpkKkRC1']' timed out after 60 seconds
+[2025-05-18 03:01:19] [!] Gagal ambil URL MP4 untuk: https://www.youtube.com/watch?v=JiAavHAksgw&list=PLqHiEtyjI0zwq1TOms-sTIyYJrpkKkRC1
