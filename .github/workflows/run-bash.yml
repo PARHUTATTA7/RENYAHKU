@@ -25,7 +25,7 @@ jobs:
       - name: Ambil File dari Repo Privat
         run: |
           git clone https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
-          cp private/cookies.txt $HOME/cookies.txt
+          cp private/cookies.txt $HOME/cookies2.txt
           cp private/urls.txt $HOME/urls.txt
 
       # 4. Jalankan skrip bash1.sh dengan output ke direktori root repo (tanpa folder output)
