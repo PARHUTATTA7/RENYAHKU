@@ -1,0 +1,27 @@
+# Python cache dan bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Log files
+*.log
+yt-download.log
+yt-m3u8.log
+
+# Cookies (privat)
+cookies.txt
+
+# Direktori virtualenv
+venv/
+.env/
+.env.*
+
+# Editor files
+*.swp
+*.swo
+*.tmp
+
+# Sistem operasi
+.DS_Store
+Thumbs.db
