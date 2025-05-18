@@ -1,9 +1,9 @@
-name: Jalankan Bash2 untuk M3U8
+name: Jalankan Bash2 Python untuk M3U8
 
 on:
   workflow_dispatch:
   schedule:
-  - cron: '0 * * * *'  # Setiap 1 jam penuh (00:00, 01:00, dst)
+    - cron: '*/10 * * * *'  # Setiap 10 menit
 
 jobs:
   run:
@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       # 2. Install dependensi
-      - name: Install yt-dlp dan jq
+      - name: Install yt-dlp dan Python dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
@@ -28,25 +28,23 @@ jobs:
           cp private/cookies.txt $HOME/cookies.txt
           cp private/urls_live.txt $HOME/urls_live.txt
 
-      # 4. Jalankan bash2.sh
-      - name: Jalankan Bash2
+      # 4. Jalankan bash2.py
+      - name: Jalankan bash2.py
         run: |
-          chmod +x bash2.sh
-          OUTPUT_DIR="${GITHUB_WORKSPACE}/output" ./bash2.sh
+          python3 bash2.py
 
-      # 5. Commit dan push hasil
+      # 5. Commit dan Push hasil (jika ada)
       - name: Commit dan Push
         run: |
-          cd output
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+
           git add .
           if git diff --cached --quiet; then
             echo "Tidak ada perubahan"
           else
-            git commit -m "Update dari ${GITHUB_REPOSITORY}/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+            git commit -m "Update dari ${GITHUB_REPOSITORY}/bash2.py - $(date '+%Y-%m-%d %H:%M:%S')"
             git fetch origin master
-            git pull --rebase --autostash origin master
-            git push origin master || echo "Push gagal setelah rebase"
+            git merge --strategy=ours origin/master || true
+            git push origin master || echo "Push gagal"
           fi
