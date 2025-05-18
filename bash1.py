@@ -7,10 +7,8 @@ REPO_NAME = "RENYAHKU"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
 COOKIES_FILE = os.path.expanduser("~/cookies.txt")
 URL_FILE = os.path.expanduser("~/urls.txt")
-OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", os.getcwd()))
-LOG_FILE = OUTPUT_DIR / "yt-download.log"
-
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+ROOT_DIR = Path(os.getcwd())
+LOG_FILE = ROOT_DIR / "yt-download.log"
 
 def log(msg):
     timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -35,7 +33,11 @@ def get_yt_dlp_output(url, format_code="18"):
             "--user-agent", USER_AGENT, "-g", "-f", format_code, url
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        return result.stdout.strip()
+        if result.returncode == 0:
+            return result.stdout.strip()
+        else:
+            log(f"[!] yt-dlp gagal dengan kode {result.returncode} untuk {url}")
+            return ""
     except Exception as e:
         log(f"[!] yt-dlp error: {e}")
         return ""
@@ -52,6 +54,7 @@ def process_urls():
             try:
                 name, url = line.strip().split(None, 1)
             except ValueError:
+                log(f"[!] Baris tidak valid: {line.strip()}")
                 continue
 
             safe_name = "".join(c for c in name if c.isalnum() or c in "_.-")
@@ -63,32 +66,34 @@ def process_urls():
                     "--user-agent", USER_AGENT,
                     "-j", "--flat-playlist", url
                 ]
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                for line in result.stdout.strip().splitlines():
-                    if '"id":' in line:
-                        vid = line.split('"id":')[1].split('"')[1]
-                        direct_url = get_yt_dlp_output(f"https://www.youtube.com/watch?v={vid}")
-                        if direct_url:
-                            filename = OUTPUT_DIR / f"{safe_name}_{vid}.txt"
-                            filename.write_text(direct_url)
-                            log(f"[✓] URL dari playlist disimpan: {filename.name}")
-                        else:
-                            log(f"[!] Gagal ambil video dari playlist ({vid})")
-            elif url.endswith(".m3u8"):
-                filename = OUTPUT_DIR / f"{safe_name}.m3u8.txt"
-                filename.write_text(url)
-                log(f"[✓] M3U8 URL disimpan: {filename.name}")
+                try:
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                    if result.returncode != 0:
+                        log(f"[!] Gagal ambil daftar playlist untuk: {url}")
+                        continue
+                    for line_pl in result.stdout.strip().splitlines():
+                        if '"id":' in line_pl:
+                            vid = line_pl.split('"id":')[1].split('"')[1]
+                            direct_url = get_yt_dlp_output(f"https://www.youtube.com/watch?v={vid}")
+                            if direct_url:
+                                filename = ROOT_DIR / f"{safe_name}_{vid}.txt"
+                                filename.write_text(direct_url)
+                                log(f"[✓] URL MP4 dari playlist disimpan: {filename.name}")
+                            else:
+                                log(f"[!] Gagal ambil video MP4 dari playlist ({vid})")
+                except Exception as e:
+                    log(f"[!] Exception saat proses playlist: {e}")
+
             else:
                 direct_url = get_yt_dlp_output(url)
                 if direct_url:
-                    filename = OUTPUT_DIR / f"{safe_name}.txt"
+                    filename = ROOT_DIR / f"{safe_name}.txt"
                     filename.write_text(direct_url)
-                    log(f"[✓] URL (itag=18) disimpan: {filename.name}")
+                    log(f"[✓] URL MP4 disimpan: {filename.name}")
                 else:
-                    log(f"[!] Gagal ambil URL (itag=18) untuk: {url}")
+                    log(f"[!] Gagal ambil URL MP4 untuk: {url}")
 
 def git_push():
-    os.chdir(OUTPUT_DIR)
     subprocess.run(["git", "config", "user.name", "GitHub Actions"], check=False)
     subprocess.run(["git", "config", "user.email", "actions@github.com"], check=False)
     subprocess.run(["git", "add", "."], check=False)
