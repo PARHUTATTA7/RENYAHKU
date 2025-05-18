@@ -3,7 +3,7 @@ name: Jalankan Bash2 Python untuk M3U8
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/10 * * * *'  # Setiap 10 menit
+    - cron: '0 * * * *'  # Setiap 1 jam (jam:menit = 00 setiap jam)
 
 jobs:
   run:
