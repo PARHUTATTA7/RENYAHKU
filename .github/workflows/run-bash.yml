@@ -1,52 +1,36 @@
-name: Jalankan Bash dari Repo Publik
+name: Jalankan Python yt-m3u8
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */4 * * *'  # Setiap 4 jam
+    - cron: '4 * * * *'  # Setiap 1 jam penuh (00:00, 01:00, dst)
 
 jobs:
   run:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repo publik (tempat script dan hasil output)
+      # 1. Checkout repo publik
       - name: Checkout Repo Publik
         uses: actions/checkout@v4
 
-      # 2. Install dependensi yt-dlp dan jq
-      - name: Install yt-dlp dan jq
+      # 2. Install dependensi
+      - name: Install yt-dlp dan Python package
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
           pip install -U yt-dlp
 
-      # 3. Clone repo privat dan salin cookies.txt & urls.txt
-      - name: Ambil File dari Repo Privat
+      # 3. Clone repo privat (cookies + urls.txt)
+      - name: Ambil cookies dan URL dari repo privat
         run: |
           git clone https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/cookies.txt $HOME/cookies.txt
           cp private/urls.txt $HOME/urls.txt
 
-      # 4. Jalankan skrip Bash dan arahkan output ke folder output/
-      - name: Jalankan Skrip Bash
+      # 4. Jalankan skrip Python
+      - name: Jalankan bash1.py
         run: |
-          chmod +x bash1.sh
-          OUTPUT_DIR="${GITHUB_WORKSPACE}/output" ./bash1.sh
+          python bash1.py
 
-      # 5. Push perubahan (jika ada) ke branch master
-      - name: Commit dan Push
-        run: |
-          cd output
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          git add .
-          if git diff --cached --quiet; then
-            echo "Tidak ada perubahan"
-          else
-            git commit -m "Update dari ${GITHUB_REPOSITORY}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
-            git fetch origin master
-            git pull --rebase --autostash origin master
-            git push origin master || echo "Push gagal setelah rebase"
-          fi
+      # 5. Push hasil update (sudah ditangani di dalam Python)
