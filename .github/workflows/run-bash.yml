@@ -1,4 +1,4 @@
-name: Jalankan Python untuk MP4
+name: Jalankan Bash dari Repo Publik
 
 on:
   workflow_dispatch:
@@ -10,21 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout repo publik
       - name: Checkout Repo Publik
         uses: actions/checkout@v4
 
-      - name: Install yt-dlp
+      # 2. Install dependensi yt-dlp dan jq
+      - name: Install yt-dlp dan jq
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
           pip install -U yt-dlp
 
-      - name: Ambil cookies.txt dan urls.txt dari repo privat
+      # 3. Clone repo privat dan salin cookies.txt & urls.txt
+      - name: Ambil File dari Repo Privat
         run: |
           git clone https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
-          cp private/cookies.txt ~/cookies.txt
-          cp private/urls.txt ~/urls.txt
+          cp private/cookies.txt $HOME/cookies.txt
+          cp private/urls.txt $HOME/urls.txt
 
-      - name: Jalankan Python
+      # 4. Jalankan skrip bash1.sh dengan output ke direktori root repo (tanpa folder output)
+      - name: Jalankan Skrip Bash
         run: |
-          python3 bash1.py
+          chmod +x bash1.sh
+          ./bash1.sh
+
+      # 5. Commit dan push hasil (jika ada perubahan)
+      - name: Commit dan Push Hasil
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Update dari ${GITHUB_REPOSITORY}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || echo "Tidak ada perubahan"
+          git pull --rebase origin master || true
+          git push origin master || echo "Gagal push setelah rebase"
