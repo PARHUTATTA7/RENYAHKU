@@ -2,7 +2,7 @@
 
 REPO_NAME="RENYAHKU"
 USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
-COOKIES_FILE="$HOME/cookies.txt"
+COOKIES_FILE="$HOME/cookies2.txt"
 OUTPUT_DIR="${OUTPUT_DIR:-$(pwd)}"
 URL_FILE="$HOME/urls.txt"
 LOG_FILE="$OUTPUT_DIR/yt-download.log"
@@ -60,22 +60,17 @@ cd "$OUTPUT_DIR" || exit 1
 git config user.email "actions@github.com"
 git config user.name "GitHub Actions"
 
-# Tambahkan hanya file .txt/.html/.m3u
-find . -maxdepth 1 -type f \( -name "*.txt" -o -name "*.m3u" -o -name "*.html" \) -exec git add {} + || {
-  log "[!] Gagal menambahkan file hasil ke git"
-  exit 1
-}
+git add . || { log "[!] Gagal menambahkan file ke git"; exit 1; }
 
-# Commit jika ada perubahan
 if ! git diff --cached --quiet; then
-  git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || {
-    log "[!] Gagal melakukan commit"
-    exit 1
-  }
+  git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || { log "[!] Gagal melakukan commit"; exit 1; }
 else
   log "[i] Tidak ada perubahan untuk commit"
 fi
 
-# Pull dan push
-git pull --rebase origin master || log "[!] Gagal rebase, lanjut push saja"
-git push origin master || log "[!] Gagal push ke remote"
+# Sinkron dengan remote tanpa konflik
+git fetch origin master
+git reset --soft origin/master || { log "[!] Gagal reset soft ke remote"; exit 1; }
+
+# Push hasil
+git push origin master || { log "[!] Gagal push ke remote"; exit 1; }
