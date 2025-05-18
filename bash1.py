@@ -1,100 +1,78 @@
-import os
-import subprocess
-import datetime
-from pathlib import Path
+#!/usr/bin/env bash
 
-REPO_NAME = "RENYAHKU"
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
-COOKIES_FILE = os.path.expanduser("~/cookies.txt")
-URL_FILE = os.path.expanduser("~/urls.txt")
-LOG_FILE = Path("yt-download.log")
+REPO_NAME="RENYAHKU"
+USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
+COOKIES_FILE="$HOME/cookies.txt"
+OUTPUT_DIR="${OUTPUT_DIR:-$(pwd)}"
+URL_FILE="$HOME/urls.txt"
+LOG_FILE="$OUTPUT_DIR/yt-download.log"
 
-def log(msg):
-    timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-    line = f"{timestamp} {msg}"
-    print(line)
-    with open(LOG_FILE, "a") as f:
-        f.write(line + "\n")
+# Bersihkan log, hanya simpan hari ini dan kemarin
+if [ -f "$LOG_FILE" ]; then
+  tmp_log="${LOG_FILE}.tmp"
+  today=$(date '+%Y-%m-%d')
+  yesterday=$(date -d "yesterday" '+%Y-%m-%d')
+  grep -E "^\[($today|$yesterday)" "$LOG_FILE" > "$tmp_log"
+  mv "$tmp_log" "$LOG_FILE"
+fi
 
-def clean_log():
-    if LOG_FILE.exists():
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        with open(LOG_FILE) as f:
-            lines = [line for line in f if line.startswith(f"[{today}") or line.startswith(f"[{yesterday}")]
-        with open(LOG_FILE, "w") as f:
-            f.writelines(lines)
+mkdir -p "$OUTPUT_DIR"
 
-def get_yt_dlp_output(url, format_code="18"):
-    try:
-        cmd = [
-            "yt-dlp", "--cookies", COOKIES_FILE,
-            "--user-agent", USER_AGENT, "-g", "-f", format_code, url
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        return result.stdout.strip()
-    except Exception as e:
-        log(f"[!] yt-dlp error: {e}")
-        return ""
+log() {
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+}
 
-def process_urls():
-    if not os.path.exists(URL_FILE):
-        log(f"[!] File {URL_FILE} tidak ditemukan")
-        return
+if [ ! -f "$URL_FILE" ]; then
+  log "[!] File $URL_FILE tidak ditemukan"
+  exit 1
+fi
 
-    with open(URL_FILE) as f:
-        for line in f:
-            if not line.strip() or line.strip().startswith("#"):
-                continue
-            try:
-                name, url = line.strip().split(None, 1)
-            except ValueError:
-                continue
+while IFS=" " read -r name url; do
+  [[ -z "$name" || "$name" == \#* ]] && continue
+  safe_name=$(echo "$name" | tr -cd '[:alnum:]_.-')
+  log "[*] Memproses: $name"
 
-            safe_name = "".join(c for c in name if c.isalnum() or c in "_.-")
-            log(f"[*] Memproses: {name}")
+  if [[ "$url" == *"playlist?list="* ]]; then
+    yt-dlp --cookies "$COOKIES_FILE" -j --flat-playlist --extractor-args "youtube:player_client=web" --user-agent "$USER_AGENT" "$url" |
+    jq -r '.id' | while read -r vid; do
+      direct_url=$(yt-dlp --cookies "$COOKIES_FILE" -g -f 18 --user-agent "$USER_AGENT" "https://www.youtube.com/watch?v=$vid")
+      if [ -z "$direct_url" ]; then
+        log "[!] Gagal ambil video dari playlist ($vid)"
+        continue
+      fi
+      echo "$direct_url" > "$OUTPUT_DIR/${safe_name}_$vid.txt"
+      log "[✓] URL dari playlist ($vid) disimpan: ${safe_name}_$vid.txt"
+    done
+  elif [[ "$url" == *.m3u8 ]]; then
+    log "[i] Lewatkan M3U8: $url"
+  else
+    merged_url=$(yt-dlp --cookies "$COOKIES_FILE" -g -f 18 --user-agent "$USER_AGENT" "$url")
+    if [ -z "$merged_url" ]; then
+      log "[!] Gagal ambil URL (itag=18) untuk: $url"
+      continue
+    fi
+    echo "$merged_url" > "$OUTPUT_DIR/${safe_name}.txt"
+    log "[✓] URL (itag=18) disimpan: ${safe_name}.txt"
+  fi
+done < "$URL_FILE"
 
-            if "playlist?list=" in url:
-                cmd = [
-                    "yt-dlp", "--cookies", COOKIES_FILE,
-                    "--user-agent", USER_AGENT,
-                    "-j", "--flat-playlist", url
-                ]
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                for line in result.stdout.strip().splitlines():
-                    if '"id":' in line:
-                        vid = line.split('"id":')[1].split('"')[1]
-                        direct_url = get_yt_dlp_output(f"https://www.youtube.com/watch?v={vid}")
-                        if direct_url:
-                            filename = Path(f"{safe_name}_{vid}.txt")
-                            filename.write_text(direct_url)
-                            log(f"[✓] URL dari playlist disimpan: {filename.name}")
-                        else:
-                            log(f"[!] Gagal ambil video dari playlist ({vid})")
-            else:
-                direct_url = get_yt_dlp_output(url)
-                if direct_url:
-                    filename = Path(f"{safe_name}.txt")
-                    filename.write_text(direct_url)
-                    log(f"[✓] URL MP4 disimpan: {filename.name}")
-                else:
-                    log(f"[!] Gagal ambil URL MP4 untuk: {url}")
+cd "$OUTPUT_DIR" || exit 1
+git config user.email "actions@github.com"
+git config user.name "GitHub Actions"
 
-def git_push():
-    subprocess.run(["git", "config", "user.name", "GitHub Actions"], check=False)
-    subprocess.run(["git", "config", "user.email", "actions@github.com"], check=False)
-    subprocess.run(["git", "add", "."], check=False)
-    diff_check = subprocess.run(["git", "diff", "--cached", "--quiet"])
-    if diff_check.returncode != 0:
-        subprocess.run(["git", "commit", "-m", f"Update dari {REPO_NAME}/python - {datetime.datetime.now()}"])
-    else:
-        log("[i] Tidak ada perubahan untuk commit")
+# Hanya add file yang ada di dalam folder ini saja
+git add . || { log "[!] Gagal menambahkan file ke git"; exit 1; }
 
-    subprocess.run(["git", "fetch", "origin", "master"], check=False)
-    subprocess.run(["git", "merge", "--strategy=ours", "origin/master"], check=False)
-    subprocess.run(["git", "push", "origin", "master"], check=False)
+# Commit jika ada perubahan di folder output
+if ! git diff --cached --quiet; then
+  git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || { log "[!] Gagal melakukan commit"; exit 1; }
+else
+  log "[i] Tidak ada perubahan untuk commit"
+fi
 
-if __name__ == "__main__":
-    clean_log()
-    process_urls()
-    git_push()
+# Pull tanpa rebase jika tidak butuh sinkron master utama (karena hanya push data)
+git fetch origin master
+git merge --strategy=ours origin/master || { log "[!] Gagal melakukan merge"; exit 1; }
+
+# Push
+git push origin master || { log "[!] Gagal push ke remote"; exit 1; }
