@@ -1,0 +1,21 @@
+name: Remove cached 'privat/' folder
+
+on:
+  workflow_dispatch:  # Bisa dijalankan manual via browser
+
+jobs:
+  remove-privat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Remove privat folder from git cache
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git rm -r --cached privat/ || true
+          echo "privat/" >> .gitignore
+          git add .gitignore
+          git commit -m "Remove privat/ from cache and add to .gitignore" || echo "Nothing to commit"
+          git push
