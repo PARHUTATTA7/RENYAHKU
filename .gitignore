@@ -29,3 +29,4 @@ venv/
 # Sistem operasi
 .DS_Store
 Thumbs.db
+privat/
