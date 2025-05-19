@@ -16,6 +16,7 @@ yt-m3u8.log
 cookies.txt
 
 # Direktori virtualenv
+privat/
 venv/
 .env/
 .env.*
