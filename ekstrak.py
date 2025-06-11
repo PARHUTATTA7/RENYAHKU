@@ -32,7 +32,7 @@ else:
 
         if found:
             print("✅ Widevine data found")
-            with open("drm_widevine.txt", "w") as out:
+            with open("jajan_kuekue.txt", "w") as out:
                 out.write("URL:\n" + widevine_data["url"] + "\n\n")
                 out.write("Header Name:\n" + widevine_data["headers"]["name"] + "\n\n")
                 out.write("Header Value:\n" + widevine_data["headers"]["value"] + "\n")
