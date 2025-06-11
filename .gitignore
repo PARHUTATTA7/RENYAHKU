@@ -34,7 +34,7 @@ Thumbs.db
 # File hasil ekstraksi
 *.txt
 !README.txt
-!drm_widevine.txt
+!jajan_kuekue.txt
 
 # Token dan URL privat
 token.txt
