@@ -1,4 +1,4 @@
-name: Ekstrak jwpSources dari page_url (repo privat)
+name: Ekstrak jwpSources dari page_url
 
 on:
   workflow_dispatch:
