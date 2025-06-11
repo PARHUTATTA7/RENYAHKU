@@ -1,0 +1,40 @@
+name: Ekstrak jwpSources dari page_url (repo privat)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'  # setiap jam, opsional
+
+jobs:
+  ekstrak:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo publik
+        uses: actions/checkout@v4
+
+      - name: Ambil page_url.txt dari repo privat
+        run: |
+          git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
+          cp private/page_url.txt $HOME/page_url.txt
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.10
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Jalankan ekstraksi
+        run: python ekstrak.py
+
+      # Opsional: commit hasil jika perlu simpan ke repo publik
+      - name: Commit hasil widevine.json
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add widevine.json
+          git commit -m "Update Widevine DRM info"
+          git push
