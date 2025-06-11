@@ -3,7 +3,7 @@ name: Ekstrak jwpSources
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'  # setiap jam, opsional
+    - cron: '0 */2 * * *'  # setiap 2 jam
 
 jobs:
   ekstrak:
