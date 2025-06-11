@@ -35,6 +35,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add jajan_kuekue.txt
-          git commit -m "Update Widevine DRM info"
-          git push
+
+          if git diff --cached --quiet; then
+            echo "✅ Tidak ada perubahan, tidak perlu commit."
+          else
+            git commit -m "Update Widevine DRM info"
+            git push
+          fi
