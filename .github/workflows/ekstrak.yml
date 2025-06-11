@@ -1,4 +1,4 @@
-name: Ekstrak jwpSources dari page_url
+name: Ekstrak jwpSources
 
 on:
   workflow_dispatch:
