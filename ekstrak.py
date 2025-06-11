@@ -32,8 +32,10 @@ else:
 
         if found:
             print("✅ Widevine data found")
-            with open("widevine.json", "w") as out:
-                json.dump(widevine_data, out, indent=2)
+            with open("drm_widevine.txt", "w") as out:
+                out.write("URL:\n" + widevine_data["url"] + "\n\n")
+                out.write("Header Name:\n" + widevine_data["headers"]["name"] + "\n\n")
+                out.write("Header Value:\n" + widevine_data["headers"]["value"] + "\n")
         else:
             print("❌ No Widevine DRM found in jwpSources")
 
