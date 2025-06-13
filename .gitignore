@@ -31,11 +31,6 @@ venv/
 .DS_Store
 Thumbs.db
 
-# File hasil ekstraksi
-*.txt
-!README.txt
-!jajan_kuekue.txt
-
 # Token dan URL privat
 token.txt
 secrets.txt
