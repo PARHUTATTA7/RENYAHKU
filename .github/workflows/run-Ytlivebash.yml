@@ -10,41 +10,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repo publik
+      # 1. Checkout repo publik (tempat script bash2.py berada)
       - name: Checkout Repo Publik
         uses: actions/checkout@v4
 
-      # 2. Install dependensi
+      # 2. Install yt-dlp dan dependensi lain
       - name: Install yt-dlp dan Python dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
           pip install -U yt-dlp
 
-      # 3. Clone repo privat (untuk ambil cookies & urls_live.txt)
-      - name: Ambil cookies.txt dan urls_live.txt dari repo privat
+      # 3. Ambil cookies.txt dan urls_live.txt dari repo privat
+      - name: Ambil cookies dan URL dari Repo Privat
         run: |
           git clone https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/cookies.txt $HOME/cookies.txt
           cp private/urls_live.txt $HOME/urls_live.txt
 
-      # 4. Jalankan bash2.py
+      # 4. Jalankan script bash2.py
       - name: Jalankan bash2.py
         run: |
           python3 bash2.py
 
-      # 5. Commit dan Push hasil (jika ada)
-      - name: Commit dan Push
+      # 5. Commit dan Push hasil
+      - name: Commit dan Push Perubahan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          # Force set remote dengan token agar bisa push
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+
           git add .
           if git diff --cached --quiet; then
-            echo "Tidak ada perubahan"
+            echo "✅ Tidak ada perubahan untuk di-commit"
           else
             git commit -m "Update dari ${GITHUB_REPOSITORY}/bash2.py - $(date '+%Y-%m-%d %H:%M:%S')"
             git fetch origin master
             git merge --strategy=ours origin/master || true
-            git push origin master || echo "Push gagal"
+            git push origin master || echo "⚠️ Push gagal"
           fi
+
