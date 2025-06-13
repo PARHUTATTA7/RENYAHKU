@@ -3,18 +3,9 @@
 REPO_NAME="RENYAHKU"
 USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
 COOKIES_FILE="$HOME/cookies2.txt"
-OUTPUT_DIR="${OUTPUT_DIR:-$(pwd)}"
 URL_FILE="$HOME/urls.txt"
+OUTPUT_DIR="$(pwd)"
 LOG_FILE="$OUTPUT_DIR/yt-download.log"
-
-# Bersihkan log, hanya simpan hari ini dan kemarin
-if [ -f "$LOG_FILE" ]; then
-  tmp_log="${LOG_FILE}.tmp"
-  today=$(date '+%Y-%m-%d')
-  yesterday=$(date -d "yesterday" '+%Y-%m-%d')
-  grep -E "^\[($today|$yesterday)" "$LOG_FILE" > "$tmp_log"
-  mv "$tmp_log" "$LOG_FILE"
-fi
 
 mkdir -p "$OUTPUT_DIR"
 
@@ -22,6 +13,13 @@ log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
 }
 
+# Bersihkan log, hanya simpan hari ini & kemarin
+if [ -f "$LOG_FILE" ]; then
+  grep -E "^\[($(date '+%Y-%m-%d')|$(date -d "yesterday" '+%Y-%m-%d'))" "$LOG_FILE" > "${LOG_FILE}.tmp"
+  mv "${LOG_FILE}.tmp" "$LOG_FILE"
+fi
+
+# Cek file URL
 if [ ! -f "$URL_FILE" ]; then
   log "[!] File $URL_FILE tidak ditemukan"
   exit 1
@@ -36,41 +34,37 @@ while IFS=" " read -r name url; do
     yt-dlp --cookies "$COOKIES_FILE" -j --flat-playlist --extractor-args "youtube:player_client=web" --user-agent "$USER_AGENT" "$url" |
     jq -r '.id' | while read -r vid; do
       direct_url=$(yt-dlp --cookies "$COOKIES_FILE" -g -f 18 --user-agent "$USER_AGENT" "https://www.youtube.com/watch?v=$vid")
-      if [ -z "$direct_url" ]; then
+      if [ -n "$direct_url" ]; then
+        echo "$direct_url" > "$OUTPUT_DIR/${safe_name}_$vid.txt"
+        log "[✓] URL dari playlist ($vid) disimpan: ${safe_name}_$vid.txt"
+      else
         log "[!] Gagal ambil video dari playlist ($vid)"
-        continue
       fi
-      echo "$direct_url" > "$OUTPUT_DIR/${safe_name}_$vid.txt"
-      log "[✓] URL dari playlist ($vid) disimpan: ${safe_name}_$vid.txt"
     done
   elif [[ "$url" == *.m3u8 ]]; then
     log "[i] Lewatkan M3U8: $url"
   else
-    merged_url=$(yt-dlp --cookies "$COOKIES_FILE" -g -f 18 --user-agent "$USER_AGENT" "$url")
-    if [ -z "$merged_url" ]; then
+    direct_url=$(yt-dlp --cookies "$COOKIES_FILE" -g -f 18 --user-agent "$USER_AGENT" "$url")
+    if [ -n "$direct_url" ]; then
+      echo "$direct_url" > "$OUTPUT_DIR/${safe_name}.txt"
+      log "[✓] URL (itag=18) disimpan: ${safe_name}.txt"
+    else
       log "[!] Gagal ambil URL (itag=18) untuk: $url"
-      continue
     fi
-    echo "$merged_url" > "$OUTPUT_DIR/${safe_name}.txt"
-    log "[✓] URL (itag=18) disimpan: ${safe_name}.txt"
   fi
 done < "$URL_FILE"
 
+# Git commit & push
 cd "$OUTPUT_DIR" || exit 1
 git config user.email "actions@github.com"
 git config user.name "GitHub Actions"
 
-git add . || { log "[!] Gagal menambahkan file ke git"; exit 1; }
+git add '*.txt' || { log "[!] Gagal git add"; exit 1; }
 
-if ! git diff --cached --quiet; then
-  git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || { log "[!] Gagal melakukan commit"; exit 1; }
-else
+if git diff --cached --quiet; then
   log "[i] Tidak ada perubahan untuk commit"
+else
+  git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || { log "[!] Gagal commit"; exit 1; }
+  git pull --rebase origin master || { log "[!] Gagal rebase"; exit 1; }
+  git push origin master || { log "[!] Gagal push ke remote"; exit 1; }
 fi
-
-# Sinkron dengan remote tanpa konflik
-git fetch origin master
-git reset --soft origin/master || { log "[!] Gagal reset soft ke remote"; exit 1; }
-
-# Push hasil
-git push origin master || { log "[!] Gagal push ke remote"; exit 1; }
