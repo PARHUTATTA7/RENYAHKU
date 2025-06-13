@@ -1,4 +1,4 @@
-# Python cache dan bytecode
+ # Python cache dan bytecode
 __pycache__/
 *.py[cod]
 *.pyo
@@ -19,8 +19,6 @@ cookies.txt
 venv/
 .env/
 .env.*
-.env.local
-.env.secret
 
 # Editor files
 *.swp
@@ -30,21 +28,3 @@ venv/
 # Sistem operasi
 .DS_Store
 Thumbs.db
-
-# Token dan URL privat
-token.txt
-secrets.txt
-page_url.txt
-
-# Hasil cloning repo privat
-/private/
-
-# GitHub Action config lokal
-*.yml~
-*.yaml~
-
-# Credential files
-*.secret
-*.key
-*.pem
-*.crt
