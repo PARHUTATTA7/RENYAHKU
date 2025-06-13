@@ -32,9 +32,14 @@ jobs:
       # Opsional: commit hasil jika perlu simpan ke repo publik
       - name: Commit hasil widevine.json
         if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Reset remote origin agar bisa push
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
           git add jajan_kuekue.json
 
@@ -42,5 +47,6 @@ jobs:
             echo "✅ Tidak ada perubahan, tidak perlu commit."
           else
             git commit -m "Update Widevine DRM info"
-            git push
+            git pull --rebase origin master || true
+            git push origin master || echo "⚠️ Push gagal"
           fi
