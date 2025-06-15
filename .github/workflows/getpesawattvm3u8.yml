@@ -3,7 +3,7 @@ name: Get Twitch M3U8 URL and Commit
 on:
   workflow_dispatch:  # Bisa dijalankan manual dari GitHub UI
   schedule:
-    - cron: '*/15 * * * *'  # Setiap 15 menit (opsional)
+    - cron: '*/30 * * * *'  # Setiap 15 menit (opsional)
 
 jobs:
   run-script:
