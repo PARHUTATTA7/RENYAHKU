@@ -1,7 +1,9 @@
 name: Get Twitch M3U8 URL and Commit
 
 on:
-  workflow_dispatch:  # Bisa dijalankan manual
+  workflow_dispatch:  # Bisa dijalankan manual dari GitHub UI
+  schedule:
+    - cron: '*/15 * * * *'  # Setiap 15 menit (opsional)
 
 jobs:
   run-script:
@@ -22,7 +24,7 @@ jobs:
           sudo apt install -y streamlink
 
       - name: Jalankan script Python
-        run: python get_twitch_url.py
+        run: python pesawatsry.py
 
       - name: Commit dan Push hasil
         run: |
