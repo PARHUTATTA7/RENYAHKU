@@ -4,7 +4,7 @@ REPO_NAME="RENYAHKU"
 USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
 COOKIES_FILE="$HOME/cookies2.txt"
 URL_FILE="$HOME/urls.txt"
-OUTPUT_DIR="$(pwd)/out"
+OUTPUT_DIR="$(pwd)"
 LOG_FILE="$OUTPUT_DIR/yt-download.log"
 
 # Bersihkan log, hanya simpan hari ini dan kemarin
