@@ -3,11 +3,12 @@
 REPO_NAME="RENYAHKU"
 USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
 COOKIES_FILE="$HOME/cookies2.txt"
-OUTPUT_DIR="${OUTPUT_DIR:-$(pwd)}"
 URL_FILE="$HOME/urls.txt"
+OUTPUT_DIR="$(pwd)/out"
 LOG_FILE="$OUTPUT_DIR/yt-download.log"
 
 # Bersihkan log, hanya simpan hari ini dan kemarin
+mkdir -p "$OUTPUT_DIR"
 if [ -f "$LOG_FILE" ]; then
   tmp_log="${LOG_FILE}.tmp"
   today=$(date '+%Y-%m-%d')
@@ -15,8 +16,6 @@ if [ -f "$LOG_FILE" ]; then
   grep -E "^\[($today|$yesterday)" "$LOG_FILE" > "$tmp_log"
   mv "$tmp_log" "$LOG_FILE"
 fi
-
-mkdir -p "$OUTPUT_DIR"
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
@@ -56,6 +55,7 @@ while IFS=" " read -r name url; do
   fi
 done < "$URL_FILE"
 
+# Git commit & push hasil
 cd "$OUTPUT_DIR" || exit 1
 git config user.email "actions@github.com"
 git config user.name "GitHub Actions"
@@ -64,13 +64,8 @@ git add . || { log "[!] Gagal menambahkan file ke git"; exit 1; }
 
 if ! git diff --cached --quiet; then
   git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || { log "[!] Gagal melakukan commit"; exit 1; }
+  git pull --rebase origin master || { log "[!] Gagal rebase dari remote"; exit 1; }
+  git push origin master || { log "[!] Gagal push ke remote"; exit 1; }
 else
   log "[i] Tidak ada perubahan untuk commit"
 fi
-
-# Sinkron dengan remote tanpa konflik
-git fetch origin master
-git reset --soft origin/master || { log "[!] Gagal reset soft ke remote"; exit 1; }
-
-# Push hasil
-git push origin master || { log "[!] Gagal push ke remote"; exit 1; }
