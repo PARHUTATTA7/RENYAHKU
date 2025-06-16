@@ -28,28 +28,25 @@ jobs:
           cp private/cookies.txt $HOME/cookies2.txt
           cp private/urls.txt $HOME/urls.txt
 
-      # 4. Jalankan skrip bash1.sh
-      - name: Jalankan Skrip Bash
+      # 4. Jalankan skrip bash
+      - name: Jalankan Skrip bash1.sh
         run: |
           chmod +x bash1.sh
           ./bash1.sh
 
-      # 5. Commit dan Push perubahan (jika ada)
-      - name: Commit dan Push Hasil
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 5. Commit dan Push hasil dari folder out/
+      - name: Commit dan Push Output .txt
         run: |
+          cd out
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add . || echo "Tidak ada file ditambahkan"
 
-          # Pastikan remote pakai token agar bisa push
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-
-          git add '*.txt' || true
           if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan"
+            echo "✅ Tidak ada perubahan untuk commit"
           else
-            git commit -m "Update dari ${GITHUB_REPOSITORY}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
-            git pull --rebase origin master || true
-            git push origin master || echo "⚠️ Gagal push setelah rebase"
+            git commit -m "Update dari bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+            git pull --rebase origin master || echo "⚠️ Gagal rebase"
+            git push origin master || echo "⚠️ Gagal push"
           fi
