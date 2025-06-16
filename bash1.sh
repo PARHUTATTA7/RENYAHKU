@@ -54,18 +54,3 @@ while IFS=" " read -r name url; do
     log "[✓] URL (itag=18) disimpan: ${safe_name}.txt"
   fi
 done < "$URL_FILE"
-
-# Git commit & push hasil
-cd "$OUTPUT_DIR" || exit 1
-git config user.email "actions@github.com"
-git config user.name "GitHub Actions"
-
-git add . || { log "[!] Gagal menambahkan file ke git"; exit 1; }
-
-if ! git diff --cached --quiet; then
-  git commit -m "Update dari ${REPO_NAME}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || { log "[!] Gagal melakukan commit"; exit 1; }
-  git pull --rebase origin master || { log "[!] Gagal rebase dari remote"; exit 1; }
-  git push origin master || { log "[!] Gagal push ke remote"; exit 1; }
-else
-  log "[i] Tidak ada perubahan untuk commit"
-fi
