@@ -37,11 +37,10 @@ jobs:
       # 5. Commit dan Push hasil dari folder out/
       - name: Commit dan Push Output .txt
         run: |
-          cd out
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add . || echo "Tidak ada file ditambahkan"
+          git add '*.txt' || echo "Tidak ada file ditambahkan"
 
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan untuk commit"
