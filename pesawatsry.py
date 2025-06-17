@@ -1,8 +1,11 @@
 import subprocess
+from pathlib import Path
+
+# Lokasi file channel
+CHANNEL_FILE = Path.home() / "channel.txt"
 
 def get_twitch_m3u8_url(channel_name):
     try:
-        # Jalankan streamlink dan ambil URL stream
         result = subprocess.run(
             ['streamlink', f'https://twitch.tv/{channel_name}', 'best', '--stream-url'],
             capture_output=True,
@@ -11,23 +14,30 @@ def get_twitch_m3u8_url(channel_name):
         )
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
-        print("❌ Gagal mendapatkan URL M3U8:")
-        print(e.stderr)
+        print(f"❌ Gagal mendapatkan URL M3U8 untuk {channel_name}: {e.stderr.strip()}")
         return None
 
-if __name__ == "__main__":
-    channel = 'sriwijayatvonline'
-    m3u8_url = get_twitch_m3u8_url(channel)
+def main():
+    if not CHANNEL_FILE.exists():
+        print(f"❌ File tidak ditemukan: {CHANNEL_FILE}")
+        return
 
-    if m3u8_url:
-        print("✅ M3U8 URL ditemukan:")
-        print(m3u8_url)
-        # Simpan ke file
-        try:
-            with open("twitch_url.txt", "w") as f:
-                f.write(m3u8_url + "\n")
-            print("✅ Disimpan ke twitch_url.txt")
-        except Exception as e:
-            print("❌ Gagal menulis ke file:", e)
-    else:
-        print("⚠️ Tidak dapat mengambil URL.")
+    with open(CHANNEL_FILE, "r") as f:
+        channels = [line.strip() for line in f if line.strip()]
+
+    for channel in channels:
+        print(f"🔄 Memproses channel: {channel}")
+        m3u8_url = get_twitch_m3u8_url(channel)
+        if m3u8_url:
+            try:
+                output_file = Path(f"{channel}.txt")
+                with open(output_file, "w") as f_out:
+                    f_out.write(m3u8_url + "\n")
+                print(f"✅ Disimpan ke {output_file}")
+            except Exception as e:
+                print(f"❌ Gagal menulis file {channel}.txt: {e}")
+        else:
+            print(f"⚠️ Tidak ada URL untuk {channel}")
+
+if __name__ == "__main__":
+    main()
