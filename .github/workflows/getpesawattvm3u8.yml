@@ -3,7 +3,7 @@ name: Get Twitch M3U8 URL and Commit
 on:
   workflow_dispatch:  # Bisa dijalankan manual dari GitHub UI
   schedule:
-    - cron: '*/30 * * * *'  # Setiap 15 menit (opsional)
+    - cron: '*/30 * * * *'  # Setiap 30 menit
 
 jobs:
   run-script:
@@ -30,11 +30,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-    
+
           git add *.txt
           if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan pada file .txt, skip commit."
+            echo "✅ Tidak ada perubahan, skip commit & push."
           else
             git commit -m "Update Twitch M3U8 URL"
-            git push
+            git pull --rebase origin master
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master
           fi
