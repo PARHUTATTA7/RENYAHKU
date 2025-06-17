@@ -23,6 +23,11 @@ jobs:
           sudo apt update
           sudo apt install -y streamlink
 
+      - name: Ambil channel.txt dari repo privat
+        run: |
+          git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
+          cp private/channel.txt $HOME/channel.txt
+
       - name: Jalankan script Python
         run: python pesawatsry.py
 
