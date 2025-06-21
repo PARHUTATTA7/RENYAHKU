@@ -5,8 +5,8 @@ from pathlib import Path
 import requests
 from datetime import datetime, timedelta
 import pytz
+import re
 
-# Lokasi file rahasia
 BOTDATA_FILE = Path.home() / "botdata.txt"
 
 def load_env(file_path):
@@ -18,13 +18,12 @@ def load_env(file_path):
                 data[key.strip()] = val.strip()
     return data
 
-# Ambil variabel dari file
 env = load_env(BOTDATA_FILE)
 API_URL = env.get("API_URL")
 BOT_TOKEN = env.get("BOT_TOKEN")
 CHAT_IDS = [x.strip() for x in env.get("CHAT_ID", "").split(",") if x.strip()]
-FOOTER_MSG = env.get("FOOTER_MSG", "")  # opsional
-WINDOW_HOURS = 2  # hanya tampilkan event dalam 2 jam ke depan
+FOOTER_MSG = env.get("FOOTER_MSG", "")
+WINDOW_HOURS = 2
 
 bot = Bot(token=BOT_TOKEN)
 
@@ -43,10 +42,32 @@ def fetch_jadwal():
         if not data:
             return "⚠️ Tidak ada jadwal hari ini."
 
-        first_key = list(data.keys())[0]
-        events_by_type = data[first_key]
+        # Ambil tanggal sekarang di UK timezone
+        tz_uk = pytz.timezone("Europe/London")
+        tz_jakarta = pytz.timezone("Asia/Jakarta")
+        today_uk = datetime.now(tz_uk).date()
+        now_jakarta = datetime.now(tz_jakarta)
+        print(f"[DEBUG] Sekarang WIB: {now_jakarta.strftime('%Y-%m-%d %H:%M:%S')}")
 
-        # Gabungkan semua event, simpan juga group/category name
+        # Temukan key dengan tanggal UK hari ini
+        target_key = None
+        for k in data.keys():
+            match = re.search(r"\d{1,2}(?:st|nd|rd|th)?\s+\w+\s+\d{4}", k)
+            if match:
+                try:
+                    clean_date = re.sub(r"(st|nd|rd|th)", "", match.group(0))
+                    dt = datetime.strptime(clean_date, "%d %B %Y").date()
+                    if dt == today_uk:
+                        target_key = k
+                        break
+                except Exception as e:
+                    print(f"⚠️ Gagal parse tanggal dari '{k}': {e}")
+
+        if not target_key:
+            return "⚠️ Tidak menemukan jadwal untuk hari ini di data."
+
+        events_by_type = data[target_key]
+
         all_events = []
         for group_name, group_events in events_by_type.items():
             print(f"[DEBUG] Menambahkan {len(group_events)} event dari grup '{group_name}'")
@@ -57,12 +78,7 @@ def fetch_jadwal():
         if not all_events:
             return "⚠️ Tidak ada event hari ini."
 
-        tz_jakarta = pytz.timezone("Asia/Jakarta")
-        tz_uk = pytz.timezone("Europe/London")
-        now = datetime.now(tz_jakarta)
-        print(f"[DEBUG] Sekarang WIB: {now.strftime('%Y-%m-%d %H:%M:%S')}")
-
-        message = f"📅 *{first_key}* _(WIB)_\n\n"
+        message = f"📅 *{target_key}* _(WIB)_\n\n"
         count = 0
         last_group = None
 
@@ -74,17 +90,15 @@ def fetch_jadwal():
 
             try:
                 dt_naive = datetime.strptime(time_str, "%H:%M")
-                dt_uk = tz_uk.localize(datetime.combine(now.date(), dt_naive.time()))
+                dt_uk = tz_uk.localize(datetime.combine(today_uk, dt_naive.time()))
                 dt_jakarta = dt_uk.astimezone(tz_jakarta)
 
-                print(f"[DEBUG] Event: {event_title} | {group_name} | UK: {time_str} → WIB: {dt_jakarta.strftime('%Y-%m-%d %H:%M')}")
-
-                if dt_jakarta.date() != now.date():
-                    if not (dt_jakarta.hour < 4 and (dt_jakarta.date() - now.date()).days == 1):
+                if dt_jakarta.date() != now_jakarta.date():
+                    if not (dt_jakarta.hour < 4 and (dt_jakarta.date() - now_jakarta.date()).days == 1):
                         continue
-                if dt_jakarta < now - timedelta(minutes=5):
+                if dt_jakarta < now_jakarta - timedelta(minutes=5):
                     continue
-                if dt_jakarta > now + timedelta(hours=WINDOW_HOURS):
+                if dt_jakarta > now_jakarta + timedelta(hours=WINDOW_HOURS):
                     continue
 
                 if group_name != last_group:
