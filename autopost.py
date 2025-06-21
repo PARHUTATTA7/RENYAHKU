@@ -6,6 +6,7 @@ import requests
 from datetime import datetime, timedelta
 import pytz
 
+# Lokasi file rahasia
 BOTDATA_FILE = Path.home() / "botdata.txt"
 
 def load_env(file_path):
@@ -17,10 +18,12 @@ def load_env(file_path):
                 data[key.strip()] = val.strip()
     return data
 
+# Ambil variabel dari file
 env = load_env(BOTDATA_FILE)
 API_URL = env.get("API_URL")
 BOT_TOKEN = env.get("BOT_TOKEN")
 CHAT_IDS = [x.strip() for x in env.get("CHAT_ID", "").split(",") if x.strip()]
+WINDOW_HOURS = 2  # hanya tampilkan event dalam 2 jam ke depan
 
 bot = Bot(token=BOT_TOKEN)
 
@@ -40,41 +43,54 @@ def fetch_jadwal():
             return "⚠️ Tidak ada jadwal hari ini."
 
         first_key = list(data.keys())[0]
-        events = data[first_key].get("PPV Events", [])
-        if not events:
+        events_by_type = data[first_key]
+
+        # Gabungkan semua event, simpan juga group/category name
+        all_events = []
+        for group_name, group_events in events_by_type.items():
+            print(f"[DEBUG] Menambahkan {len(group_events)} event dari grup '{group_name}'")
+            for ev in group_events:
+                ev["__group__"] = group_name
+                all_events.append(ev)
+
+        if not all_events:
             return "⚠️ Tidak ada event hari ini."
 
         tz_jakarta = pytz.timezone("Asia/Jakarta")
         tz_uk = pytz.timezone("Europe/London")
         now = datetime.now(tz_jakarta)
-
         print(f"[DEBUG] Sekarang WIB: {now.strftime('%Y-%m-%d %H:%M:%S')}")
 
         message = f"📅 *{first_key}* _(WIB)_\n\n"
         count = 0
+        last_group = None
 
-        for e in events:
+        for e in all_events:
+            group_name = e.get("__group__", "Unknown")
             time_str = e.get("time", "-")
             event_title = e.get("event", "-")
             channel_names = ", ".join([c.get("channel_name") for c in e.get("channels", [])])
 
             try:
-                dt_uk = datetime.strptime(time_str, "%H:%M")
-                dt_uk = tz_uk.localize(now.replace(hour=dt_uk.hour, minute=dt_uk.minute, second=0))
+                # Konversi waktu UK → WIB
+                dt_naive = datetime.strptime(time_str, "%H:%M")
+                dt_uk = tz_uk.localize(datetime.combine(now.date(), dt_naive.time()))
                 dt_jakarta = dt_uk.astimezone(tz_jakarta)
 
-                print(f"[DEBUG] Event: {event_title} | UK: {time_str} → WIB: {dt_jakarta.strftime('%Y-%m-%d %H:%M')}")
+                print(f"[DEBUG] Event: {event_title} | {group_name} | UK: {time_str} → WIB: {dt_jakarta.strftime('%Y-%m-%d %H:%M')}")
 
-                # Filter: jika beda hari, hanya izinkan event 00:00–03:59
+                # Filter waktu
                 if dt_jakarta.date() != now.date():
                     if not (dt_jakarta.hour < 4 and (dt_jakarta.date() - now.date()).days == 1):
-                        print(f"[SKIP] Beda tanggal tanpa toleransi subuh")
                         continue
-
-                # Filter: event sudah lewat 5 menit
                 if dt_jakarta < now - timedelta(minutes=5):
-                    print(f"[SKIP] Sudah lewat: {dt_jakarta.strftime('%H:%M')} < {now.strftime('%H:%M')}")
                     continue
+                if dt_jakarta > now + timedelta(hours=WINDOW_HOURS):
+                    continue
+
+                if group_name != last_group:
+                    message += f"🗂️ *{group_name}*\n"
+                    last_group = group_name
 
                 jam = dt_jakarta.strftime("%H:%M")
                 message += f"⏰ {jam} WIB\n🎯 *{event_title}*\n📺 {channel_names or 'N/A'}\n\n"
@@ -84,7 +100,7 @@ def fetch_jadwal():
                 print(f"⚠️ Gagal parsing waktu: {time_str} → {e}")
                 continue
 
-        return message.strip() if count > 0 else "⚠️ Tidak ada pertandingan tersisa hari ini."
+        return message.strip() if count > 0 else "⚠️ Tidak ada pertandingan dalam 2 jam ke depan."
 
     except Exception as e:
         return f"❌ Gagal mengambil data: {e}"
