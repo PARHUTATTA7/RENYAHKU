@@ -23,6 +23,7 @@ env = load_env(BOTDATA_FILE)
 API_URL = env.get("API_URL")
 BOT_TOKEN = env.get("BOT_TOKEN")
 CHAT_IDS = [x.strip() for x in env.get("CHAT_ID", "").split(",") if x.strip()]
+FOOTER_MSG = env.get("FOOTER_MSG", "")  # opsional
 WINDOW_HOURS = 2  # hanya tampilkan event dalam 2 jam ke depan
 
 bot = Bot(token=BOT_TOKEN)
@@ -72,14 +73,12 @@ def fetch_jadwal():
             channel_names = ", ".join([c.get("channel_name") for c in e.get("channels", [])])
 
             try:
-                # Konversi waktu UK → WIB
                 dt_naive = datetime.strptime(time_str, "%H:%M")
                 dt_uk = tz_uk.localize(datetime.combine(now.date(), dt_naive.time()))
                 dt_jakarta = dt_uk.astimezone(tz_jakarta)
 
                 print(f"[DEBUG] Event: {event_title} | {group_name} | UK: {time_str} → WIB: {dt_jakarta.strftime('%Y-%m-%d %H:%M')}")
 
-                # Filter waktu
                 if dt_jakarta.date() != now.date():
                     if not (dt_jakarta.hour < 4 and (dt_jakarta.date() - now.date()).days == 1):
                         continue
@@ -100,7 +99,12 @@ def fetch_jadwal():
                 print(f"⚠️ Gagal parsing waktu: {time_str} → {e}")
                 continue
 
-        return message.strip() if count > 0 else "⚠️ Tidak ada pertandingan dalam 2 jam ke depan."
+        if count > 0:
+            if FOOTER_MSG:
+                message += f"\n{FOOTER_MSG}"
+            return message.strip()
+        else:
+            return "⚠️ Tidak ada pertandingan dalam 2 jam ke depan."
 
     except Exception as e:
         return f"❌ Gagal mengambil data: {e}"
