@@ -1,9 +1,9 @@
+import asyncio
 from telegram import Bot
 import os
 from pathlib import Path
 import requests
 
-# Path ke file data rahasia
 BOTDATA_FILE = Path.home() / "botdata.txt"
 
 def load_env(file_path):
@@ -16,7 +16,6 @@ def load_env(file_path):
     return data
 
 env = load_env(BOTDATA_FILE)
-
 API_URL = env.get("API_URL")
 BOT_TOKEN = env.get("BOT_TOKEN")
 CHAT_IDS = [x.strip() for x in env.get("CHAT_ID", "").split(",") if x.strip()]
@@ -44,14 +43,14 @@ def fetch_jadwal():
     except Exception as e:
         return f"❌ Gagal mengambil data: {e}"
 
-def main():
+async def main():
     message = fetch_jadwal()
     for chat_id in CHAT_IDS:
         try:
-            bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+            await bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
             print(f"✅ Terkirim ke {chat_id}")
         except Exception as e:
             print(f"❌ Gagal kirim ke {chat_id}: {e}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
