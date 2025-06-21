@@ -65,7 +65,7 @@ def fetch_jadwal():
 
                 if dt_jakarta.date() != now.date():
                     continue
-                if dt_jakarta < now - timedelta(minutes=5):
+                if dt_jakarta < now - timedelta(minutes=60) or dt_jakarta > now + timedelta(hours=1):
                     continue
 
                 jam = dt_jakarta.strftime("%H:%M")
