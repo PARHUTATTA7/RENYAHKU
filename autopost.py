@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import pytz
 import re
 
+# File kredensial dari repo privat
 BOTDATA_FILE = Path.home() / "botdata.txt"
 
 def load_env(file_path):
@@ -23,16 +24,16 @@ API_URL = env.get("API_URL")
 BOT_TOKEN = env.get("BOT_TOKEN")
 CHAT_IDS = [x.strip() for x in env.get("CHAT_ID", "").split(",") if x.strip()]
 FOOTER_MSG = env.get("FOOTER_MSG", "")
-WINDOW_HOURS = 2
+WINDOW_HOURS = 2  # event 2 jam ke depan
 
 bot = Bot(token=BOT_TOKEN)
 
 def fetch_jadwal():
     try:
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0",
             "Referer": "https://thedaddy.click/",
-            "Accept": "application/json, text/plain, */*"
+            "Accept": "application/json"
         }
 
         response = requests.get(API_URL, headers=headers, timeout=10)
@@ -42,17 +43,16 @@ def fetch_jadwal():
         if not data:
             return "⚠️ Tidak ada jadwal hari ini."
 
-        # Ambil tanggal sekarang di UK timezone
         tz_uk = pytz.timezone("Europe/London")
         tz_jakarta = pytz.timezone("Asia/Jakarta")
         today_uk = datetime.now(tz_uk).date()
         now_jakarta = datetime.now(tz_jakarta)
         print(f"[DEBUG] Sekarang WIB: {now_jakarta.strftime('%Y-%m-%d %H:%M:%S')}")
 
-        # Temukan key dengan tanggal UK hari ini
+        # Temukan key yang cocok dengan tanggal hari ini
         target_key = None
         for k in data.keys():
-            match = re.search(r"\d{1,2}(?:st|nd|rd|th)?\s+\w+\s+\d{4}", k)
+            match = re.search(r"\d{1,2}(st|nd|rd|th)?\s+\w+\s+\d{4}", k)
             if match:
                 try:
                     clean_date = re.sub(r"(st|nd|rd|th)", "", match.group(0))
@@ -64,13 +64,14 @@ def fetch_jadwal():
                     print(f"⚠️ Gagal parse tanggal dari '{k}': {e}")
 
         if not target_key:
-            return "⚠️ Tidak menemukan jadwal untuk hari ini di data."
+            return f"⚠️ Tidak menemukan jadwal untuk tanggal {today_uk.strftime('%d %B %Y')}"
 
-        events_by_type = data[target_key]
+        events_by_type = data.get(target_key)
+        if not isinstance(events_by_type, dict):
+            return f"⚠️ Format data salah untuk key: {target_key}"
 
         all_events = []
         for group_name, group_events in events_by_type.items():
-            print(f"[DEBUG] Menambahkan {len(group_events)} event dari grup '{group_name}'")
             for ev in group_events:
                 ev["__group__"] = group_name
                 all_events.append(ev)
