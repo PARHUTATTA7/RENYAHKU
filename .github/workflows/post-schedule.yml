@@ -27,7 +27,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests python-telegram-bot==20.7
+        run: pip install requests python-telegram-bot==20.7 pytz
 
       - name: Jalankan bot autopost
         run: python autopost.py
