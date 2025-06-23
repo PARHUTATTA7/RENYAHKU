@@ -31,14 +31,15 @@ jobs:
 
       - name: Commit dan Push output
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add TESSTSS7.m3u8
-
-          if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan"
-          else
-            git commit -m "auto: update TESSTSS7.m3u8"
-            git pull --rebase origin master
-            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master
+          sh -c '
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add TESSTSS7.m3u8
+            if git diff --cached --quiet; then
+              echo "✅ Tidak ada perubahan"
+            else
+              git commit -m "auto: update TESSTSS7.m3u8"
+              git pull --rebase origin master
+              git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master
+            fi
+          '
