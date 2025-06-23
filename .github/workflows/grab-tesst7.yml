@@ -1,0 +1,43 @@
+name: Grab Tesst7 M3U8
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"  # Setiap jam
+
+jobs:
+  grab:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Ambil daylidata.txt dari repo privat
+        run: |
+          git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
+          cp private/daylidata.txt $HOME/daylidata.txt
+
+      - name: Jalankan script Python
+        run: python getdaily.py
+
+      - name: Commit dan Push output
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add TESSTSS7.m3u8
+          if git diff --cached --quiet; then
+            echo "✅ Tidak ada perubahan"
+          else
+            git commit -m "auto: update TESSTSS7.m3u8"
+            git pull --rebase origin master
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master
