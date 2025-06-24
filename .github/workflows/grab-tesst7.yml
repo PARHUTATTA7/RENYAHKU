@@ -3,7 +3,7 @@ name: Grab Tesst7 M3U8
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */2 * * *"  # Setiap 2 jam
+    - cron: "0 */2 * * *"
 
 jobs:
   grab:
@@ -18,14 +18,21 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Restore proxy cache
-        uses: actions/cache@v4
-        with:
-          path: proxy_cache.txt
-          key: proxy-cache-v1
-
       - name: Install dependencies
         run: pip install requests
+
+      - name: Restore proxy_ok.txt dari cache sebelumnya
+        id: cache-proxy
+        uses: actions/cache/restore@v4
+        with:
+          path: .proxycache
+          key: proxy-ok-latest
+
+      - name: Pindahkan proxy_ok.txt jika cache ditemukan
+        if: steps.cache-proxy.outputs.cache-hit == 'true'
+        run: |
+          cp .proxycache/proxy_ok.txt proxy_ok.txt
+          echo "✅ proxy_ok.txt dipulihkan dari cache"
 
       - name: Ambil daylidata.txt dari repo privat
         run: |
@@ -35,23 +42,32 @@ jobs:
       - name: Jalankan script Python
         run: python getdaily.py
 
-      - name: Save proxy cache
+      - name: Simpan cache proxy jika proxy_ok.txt ada
+        if: ${{ always() }}
+        run: |
+          if [ -f proxy_ok.txt ]; then
+            mkdir -p .proxycache
+            cp proxy_ok.txt .proxycache/
+            echo "✅ proxy_ok.txt disiapkan untuk cache"
+          else
+            echo "⚠️ proxy_ok.txt tidak ditemukan, skip simpan"
+          fi
+
+      - name: Save proxy_ok.txt ke cache
+        if: ${{ always() }}
         uses: actions/cache/save@v4
         with:
-          path: proxy_cache.txt
-          key: proxy-cache-v1
+          path: .proxycache
+          key: proxy-ok-latest
 
       - name: Commit dan Push output
         run: |
-          sh -c '
-            git config user.name "github-actions"
-            git config user.email "github-actions@github.com"
-            git add TESSTSS7.m3u8
-            if git diff --cached --quiet; then
-              echo "✅ Tidak ada perubahan"
-            else
-              git commit -m "auto: update TESSTSS7.m3u8"
-              git pull --rebase origin master
-              git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master
-            fi
-          '
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add TESSTSS7.m3u8
+          if git diff --cached --quiet; then
+            echo "✅ Tidak ada perubahan"
+          else
+            git commit -m "auto: update TESSTSS7.m3u8"
+            git pull --rebase origin master
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master
