@@ -2,8 +2,9 @@
 import requests
 from pathlib import Path
 
-# Lokasi file konfigurasi
+# Lokasi file konfigurasi & cache
 DAYLIDATA = Path.home() / "daylidata.txt"
+PROXY_CACHE_FILE = Path("proxy_ok.txt")
 FILE_NAME = "TESSTSS7.m3u8"
 session = requests.Session()
 
@@ -26,6 +27,16 @@ def get_proxies(proxy_url):
     except Exception as e:
         print(f"[!] Gagal ambil proxy list: {e}")
         return []
+
+def load_cached_proxy():
+    if PROXY_CACHE_FILE.exists():
+        with open(PROXY_CACHE_FILE) as f:
+            return f.read().strip()
+    return None
+
+def save_working_proxy(proxy):
+    with open(PROXY_CACHE_FILE, "w") as f:
+        f.write(proxy.strip())
 
 def try_proxy(proxy, dailymotion_url, meta_url_template):
     proxies = {"http": proxy, "https": proxy}
@@ -64,6 +75,7 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
             f.write(m3u_res.text)
 
         print(f"[✓] Simpan ke {FILE_NAME}")
+        save_working_proxy(proxy)
         return True
 
     except Exception as e:
@@ -100,6 +112,17 @@ def main():
         print("❌ Ada parameter yang belum lengkap di daylidata.txt")
         return
 
+    # 1. Coba proxy cache dulu
+    cached_proxy = load_cached_proxy()
+    if cached_proxy:
+        print(f"[•] Coba proxy cache terlebih dahulu: {cached_proxy}")
+        if try_proxy(cached_proxy, DAILYMOTION_URL, meta_url):
+            print("✅ Berhasil dengan proxy cache")
+            return
+        else:
+            print("✖️ Proxy cache gagal, lanjut ke daftar proxy")
+
+    # 2. Coba daftar proxy
     proxies = get_proxies(url_proxy)
     if not proxies:
         print("❌ Tidak ada proxy tersedia")
