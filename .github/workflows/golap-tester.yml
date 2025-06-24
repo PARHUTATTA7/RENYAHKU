@@ -1,4 +1,4 @@
-name: Proxy Tester
+name: Golap Tester
 
 on:
   workflow_dispatch:  # Bisa dijalankan manual
