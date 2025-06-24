@@ -90,9 +90,14 @@ def fallback_write(fallback_url):
         with open(FILE_NAME, "w") as f:
             f.write(res.text)
         print(f"[✓] Fallback disimpan ke {FILE_NAME}")
+
+        # Tambahkan agar file cache tetap ada
+        if not PROXY_CACHE_FILE.exists():
+            PROXY_CACHE_FILE.write_text("#fallback-used")
+
     except Exception as e:
         print(f"[×] Gagal ambil fallback: {e}")
-
+        
 def main():
     if not DAYLIDATA.exists():
         print(f"[!] File {DAYLIDATA} tidak ditemukan.")
