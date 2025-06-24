@@ -1,4 +1,4 @@
-Grab Tesst7 M3U8
+name: Grab Tesst7 M3U8
 
 on:
   workflow_dispatch:
@@ -35,6 +35,7 @@ jobs:
             git config user.name "github-actions"
             git config user.email "github-actions@github.com"
             git add TESSTSS7.m3u8
+
             if git diff --cached --quiet; then
               echo "✅ Tidak ada perubahan"
             else
