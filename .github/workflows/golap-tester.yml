@@ -3,7 +3,7 @@ name: Golap Tester
 on:
   workflow_dispatch:  # Bisa dijalankan manual
   schedule:
-    - cron: "0 * * * *"  # Setiap jam (UTC)
+    - cron: "*/30 * * * *"  # Setiap 30 menit (UTC)
 
 jobs:
   test-proxy:
