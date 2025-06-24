@@ -3,7 +3,7 @@ from pathlib import Path
 import time
 
 DATATESTER = Path.home() / "datatester.txt"
-PROXY_FILE = Path("proxy_tester_list.txt")
+PROXY_FILE = Path("golap_list.txt")
 TEST_TIMEOUT = 5
 MAX_VALID = 5
 
