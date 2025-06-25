@@ -3,34 +3,50 @@ name: Grab Tesst7 M3U8
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */2 * * *"  # Setiap 2 jam
+    - cron: "0 */2 * * *"  # Setiap 2 jam (UTC)
 
 jobs:
   grab:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: ⬇️ Checkout repository
         uses: actions/checkout@v3
+        with:
+          persist-credentials: true
 
-      - name: Setup Python
+      - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Python dependencies
+      - name: 📦 Install Python dependencies
         run: pip install requests
 
-      - name: Download `daylidata.txt` from private repo
+      - name: 🔐 Download `daylidata.txt` from private repo
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} temp_private
           cp temp_private/daylidata.txt $HOME/daylidata.txt
           rm -rf temp_private
 
-      - name: Run Python script
+      - name: ▶️ Jalankan Python script
         run: python getdaily.py
 
-      - name: Commit & Push if changed
+      - name: 🧩 Debug file status
+        run: |
+          echo ">>> SHA256:"
+          sha256sum TESSTSS7.m3u8 || echo "File tidak ditemukan"
+          echo ">>> HEAD:"
+          head -n 5 TESSTSS7.m3u8 || true
+          echo ">>> TAIL:"
+          tail -n 5 TESSTSS7.m3u8 || true
+          echo ">>> Git status:"
+          git status
+
+      - name: 🔄 Pull before commit
+        run: git pull --rebase origin master
+
+      - name: ✅ Commit & Push if changed
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
@@ -42,6 +58,6 @@ jobs:
           else
             echo "📤 Commit dan Push update..."
             git commit -m "auto: update TESSTSS7.m3u8"
-            git pull --rebase origin master
             git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master
           fi
+          
