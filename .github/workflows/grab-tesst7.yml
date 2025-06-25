@@ -13,7 +13,7 @@ jobs:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v3
         with:
-          persist-credentials: true
+          persist-credentials: true  # Penting agar bisa push
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -32,7 +32,7 @@ jobs:
       - name: ▶️ Jalankan Python script
         run: python getdaily.py
 
-      - name: 🧩 Debug file status
+      - name: 🧩 Debug status & isi file
         run: |
           echo ">>> SHA256:"
           sha256sum TESSTSS7.m3u8 || echo "File tidak ditemukan"
@@ -40,19 +40,20 @@ jobs:
           head -n 5 TESSTSS7.m3u8 || true
           echo ">>> TAIL:"
           tail -n 5 TESSTSS7.m3u8 || true
-          echo ">>> Git status:"
           git status
+          git branch
 
-      - name: 🔄 Pull before commit
-        run: git pull --rebase origin master
-
-      - name: ✅ Commit & Push if changed
+      - name: ✅ Commit & Push jika ada perubahan
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add TESSTSS7.m3u8
 
+          # Tarik perubahan dari master setelah add, supaya tidak konflik
+          git pull --rebase origin master
+
+          # Cek apakah ada perubahan di staging
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan"
           else
