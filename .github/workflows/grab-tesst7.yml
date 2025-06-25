@@ -13,7 +13,7 @@ jobs:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v3
         with:
-          persist-credentials: true  # Penting agar bisa push
+          persist-credentials: true
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -23,16 +23,16 @@ jobs:
       - name: 📦 Install Python dependencies
         run: pip install requests
 
-      - name: 🔐 Download `daylidata.txt` from private repo
+      - name: 🔐 Download `daylidata.txt` dari repo privat
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} temp_private
           cp temp_private/daylidata.txt $HOME/daylidata.txt
           rm -rf temp_private
 
-      - name: ▶️ Jalankan Python script
+      - name: ▶️ Jalankan Python
         run: python getdaily.py
 
-      - name: 🧩 Debug status & isi file
+      - name: 🧩 Cek isi file dan status Git
         run: |
           echo ">>> SHA256:"
           sha256sum TESSTSS7.m3u8 || echo "File tidak ditemukan"
@@ -43,17 +43,16 @@ jobs:
           git status
           git branch
 
-      - name: ✅ Commit & Push jika ada perubahan
+      - name: ✅ Commit & Push jika berubah
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add TESSTSS7.m3u8
 
-          # Tarik perubahan dari master setelah add, supaya tidak konflik
-          git pull --rebase origin master
+          # FIXED: Gunakan --autostash agar pull tidak gagal
+          git pull --rebase --autostash origin master
 
-          # Cek apakah ada perubahan di staging
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan"
           else
