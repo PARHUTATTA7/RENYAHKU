@@ -3,7 +3,7 @@ name: Jalankan Bash dari Repo Publik
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *'  # Setiap 4 jam
+    - cron: '0 */3 * * *'  # Setiap 3 jam
 
 jobs:
   run:
@@ -40,12 +40,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          git fetch origin
+          git reset --hard origin/master
+
           git add '*.txt' || echo "Tidak ada file ditambahkan"
 
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan untuk commit"
           else
             git commit -m "Update dari bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
-            git pull --rebase origin master || echo "⚠️ Gagal rebase"
             git push origin master || echo "⚠️ Gagal push"
           fi
