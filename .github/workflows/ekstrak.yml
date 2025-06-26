@@ -41,12 +41,15 @@ jobs:
           # Reset remote origin agar bisa push
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
+          # Ambil update terakhir dari remote (tanpa merge rebase)
+          git fetch origin
+          git reset --hard origin/master
+
           git add jajan_kuekue.json
 
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan, tidak perlu commit."
           else
             git commit -m "Update Widevine DRM info"
-            git pull --rebase origin master || true
             git push origin master || echo "⚠️ Push gagal"
           fi
