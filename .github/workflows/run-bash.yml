@@ -10,45 +10,109 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repo publik
-      - name: Checkout Repo Publik
+      # 1. Checkout repo dengan history penuh
+      - name: Checkout Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ambil seluruh history git
 
-      # 2. Install yt-dlp dan jq
-      - name: Install yt-dlp dan jq
+      # 2. Debug: List directory sebelum eksekusi
+      - name: Debug - Struktur Direktori Awal
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
-          pip install -U yt-dlp
+          echo "### Struktur Direktori Awal ###"
+          ls -R
+          echo "##############################"
 
-      # 3. Clone repo privat dan ambil cookies.txt & urls.txt
+      # 3. Setup environment dengan error handling
+      - name: Setup Environment
+        run: |
+          echo "🔄 Menginstall dependencies..."
+          sudo apt-get update && sudo apt-get install -y jq || {
+            echo "❌ Gagal install jq";
+            exit 1;
+          }
+          pip install -U yt-dlp || {
+            echo "❌ Gagal install yt-dlp";
+            exit 1;
+          }
+          mkdir -p out
+          echo "✅ Environment siap"
+
+      # 4. Clone repo private dengan status check
       - name: Ambil File dari Repo Privat
         run: |
-          git clone https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
-          cp private/cookies.txt $HOME/cookies2.txt
-          cp private/urls.txt $HOME/urls.txt
+          echo "🔒 Mengakses repo private..."
+          if ! git clone https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private; then
+            echo "⚠️ Gagal clone repo private, melanjutkan tanpa file..."
+          else
+            [ -f private/cookies.txt ] && cp private/cookies.txt $HOME/cookies2.txt
+            [ -f private/urls.txt ] && cp private/urls.txt $HOME/urls.txt
+            echo "✅ File private diambil"
+          fi
 
-      # 4. Jalankan skrip bash
+      # 5. Jalankan skrip utama dengan logging
       - name: Jalankan Skrip bash1.sh
         run: |
+          echo "🏃‍♂️ Menjalankan bash1.sh..."
           chmod +x bash1.sh
-          ./bash1.sh
+          if ! ./bash1.sh; then
+            echo "❌ bash1.sh gagal dengan exit code $?"
+            echo "=== DEBUG OUTPUT ==="
+            [ -f logs.txt ] && cat logs.txt
+            exit 1
+          fi
+          echo "✅ bash1.sh selesai"
 
-      # 5. Commit dan Push hasil dari folder out/
-      - name: Commit dan Push Output .txt
+      # 6. Debug: List directory setelah eksekusi
+      - name: Debug - Struktur Direktori Setelah Eksekusi
         run: |
+          echo "### Struktur Direktori Setelah Run ###"
+          ls -R
+          echo "##############################"
+          echo "### File .txt yang ditemukan ###"
+          find . -name "*.txt" -not -path "./.git/*"
+          echo "##############################"
+
+      # 7. Commit dan Push dengan robust checking
+      - name: Commit dan Push Perubahan
+        run: |
+          echo "🔍 Memeriksa perubahan..."
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-
+          git remote -v
+          
+          # Update branch
           git fetch origin
-          git reset --hard origin/master
+          git reset --hard origin/master || {
+            echo "❌ Gagal reset branch";
+            exit 1;
+          }
 
-          git add '*.txt' || echo "Tidak ada file ditambahkan"
+          # Add all .txt files
+          find . -name "*.txt" -not -path "./.git/*" -exec git add {} +
+          
+          # Debug status sebelum commit
+          echo "=== STATUS GIT ==="
+          git status
+          echo "================"
 
           if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan untuk commit"
+            echo "ℹ️ Tidak ada perubahan untuk di-commit"
           else
-            git commit -m "Update dari bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
-            git push origin master || echo "⚠️ Gagal push"
+            echo "💾 Membuat commit..."
+            git commit -m "Auto-update: $(date '+%Y-%m-%d %H:%M:%S')" || {
+              echo "❌ Gagal membuat commit";
+              exit 1;
+            }
+            
+            echo "🚀 Mencoba push..."
+            if git push origin master; then
+              echo "✅ Push berhasil"
+            else
+              echo "❌ Gagal push, mencoba force push..."
+              git push --force-with-lease origin master || {
+                echo "❌ Gagal force push";
+                exit 1;
+              }
+            fi
           fi
