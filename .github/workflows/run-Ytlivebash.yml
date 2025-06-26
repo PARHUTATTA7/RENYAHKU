@@ -41,16 +41,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Force set remote dengan token agar bisa push
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+
+          git fetch origin
+          git reset --hard origin/master
 
           git add .
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan untuk di-commit"
           else
             git commit -m "Update dari ${GITHUB_REPOSITORY}/bash2.py - $(date '+%Y-%m-%d %H:%M:%S')"
-            git fetch origin master
-            git merge --strategy=ours origin/master || true
             git push origin master || echo "⚠️ Push gagal"
           fi
 
