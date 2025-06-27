@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repo publik
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Wajib agar bisa reset dan diff dengan benar
 
       - name: Ambil page_url.txt dari repo privat
         run: |
@@ -33,14 +35,11 @@ jobs:
 
       - name: Debug - Status Perubahan Git
         run: |
-          echo "📁 File .txt yang tersedia:"
-          ls -lah *.txt || echo "Tidak ada file .txt"
+          echo "📁 File jajan_kuekue.json:"
+          cat jajan_kuekue.json || echo "Tidak ditemukan"
 
           echo "🔍 Status Git:"
           git status
-
-          echo "🔍 Perubahan yang distaging:"
-          git diff --cached || echo "(tidak ada perubahan)"
 
           echo "🔍 Perubahan di working directory:"
           git diff || echo "(tidak ada perubahan)"
@@ -56,13 +55,16 @@ jobs:
           # Set remote agar bisa push
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Tambahkan file hasil ekstrak
-          git add jajan_kuekue.json
+          # Sinkronisasi ulang branch utama
+          git fetch origin
+          git reset --hard origin/master
 
-          # Commit jika ada perubahan
-          if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan, tidak perlu commit."
-          else
-            git commit -m "Update Widevine DRM info"
+          # Cek apakah jajan_kuekue.json berubah
+          if ! git diff --quiet jajan_kuekue.json; then
+            echo "📦 File berubah, membuat commit..."
+            git add jajan_kuekue.json
+            git commit -m "Update Widevine DRM info - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master || echo "⚠️ Push gagal"
+          else
+            echo "✅ File jajan_kuekue.json tidak berubah. Skip commit."
           fi
