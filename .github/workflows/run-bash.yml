@@ -42,16 +42,29 @@ jobs:
           git fetch origin
           git reset --hard origin/master
 
+          echo "📁 Menambahkan semua file .txt:"
           find . -name "*.txt" -not -path "./.git/*" -exec git add {} +
 
-          echo "=== GIT STATUS ==="
+          echo "🔍 DEBUG GIT STATUS & DIFF"
+          echo "--------------------------"
+          echo "📋 STATUS:"
           git status
-          echo "=== GIT DIFF ==="
-          git diff --cached || true
+
+          echo "📂 FILE STAGED UNTUK COMMIT:"
+          git diff --cached --name-status || echo "❌ Gagal lihat name-status"
+
+          echo "📄 ISI PERUBAHAN STAGED:"
+          git diff --cached || echo "❌ Gagal lihat diff isi"
+
+          echo "📁 FILE BELUM DI-TRACK:"
+          git ls-files --others --exclude-standard || echo "❌ Gagal lihat file baru"
 
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan, skip commit."
           else
+            echo "💾 Membuat commit..."
             git commit -m "Auto-update: $(date '+%Y-%m-%d %H:%M:%S')"
+
+            echo "🚀 Push ke origin/master..."
             git push origin master || git push --force-with-lease origin master
           fi
