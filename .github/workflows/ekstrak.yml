@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repo publik
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Wajib agar bisa reset dan diff dengan benar
+          fetch-depth: 0
 
       - name: Ambil page_url.txt dari repo privat
         run: |
@@ -33,17 +33,6 @@ jobs:
         run: |
           python ekstrak.py
 
-      - name: Debug - Status Perubahan Git
-        run: |
-          echo "📁 File jajan_kuekue.json:"
-          cat jajan_kuekue.json || echo "Tidak ditemukan"
-
-          echo "🔍 Status Git:"
-          git status
-
-          echo "🔍 Perubahan di working directory:"
-          git diff || echo "(tidak ada perubahan)"
-
       - name: Commit hasil ke repo publik
         if: success()
         env:
@@ -52,19 +41,21 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Set remote agar bisa push
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Sinkronisasi ulang branch utama
-          git fetch origin
-          git reset --hard origin/master
-
-          # Cek apakah jajan_kuekue.json berubah
+          # Tambahkan dan commit jika file berubah
           if ! git diff --quiet jajan_kuekue.json; then
-            echo "📦 File berubah, membuat commit..."
+            echo "📦 File jajan_kuekue.json berubah, membuat commit..."
+
             git add jajan_kuekue.json
             git commit -m "Update Widevine DRM info - $(date '+%Y-%m-%d %H:%M:%S')"
+
+            # Pastikan rebase dengan upstream dulu sebelum push
+            git fetch origin
+            git pull --rebase origin master || exit 1
+
+            echo "🚀 Push ke repo..."
             git push origin master || echo "⚠️ Push gagal"
           else
-            echo "✅ File jajan_kuekue.json tidak berubah. Skip commit."
+            echo "✅ File tidak berubah. Tidak perlu commit."
           fi
