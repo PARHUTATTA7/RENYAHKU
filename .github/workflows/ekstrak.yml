@@ -56,10 +56,6 @@ jobs:
           # Set remote agar bisa push
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Sinkronisasi branch lokal dengan remote
-          git fetch origin
-          git reset --hard origin/master
-
           # Tambahkan file hasil ekstrak
           git add jajan_kuekue.json
 
