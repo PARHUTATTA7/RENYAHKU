@@ -1,17 +1,16 @@
+#!/usr/bin/env python3
+
 import subprocess
 import datetime
 import os
-import random
-import urllib.request
 from pathlib import Path
 
 REPO_NAME = "RENYAHKU"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
 COOKIES_FILE = str(Path.home() / "cookies.txt")
 URL_FILE = Path.home() / "urls_live.txt"
-PROXY_LIST_URL_FILE = Path.home() / "proxylisturl.txt"
-LOG_FILE = Path("yt-m3u8.log")
-WORKDIR = Path(".")
+LOG_FILE = Path("yt-m3u8.log")  # log dan hasil di root repo
+WORKDIR = Path(".")  # root repo
 
 def log(msg):
     timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -20,6 +19,7 @@ def log(msg):
     with LOG_FILE.open("a", encoding="utf-8") as f:
         f.write(line + "\n")
 
+# Bersihkan log (simpan hanya hari ini & kemarin)
 def clean_log():
     if not LOG_FILE.exists():
         return
@@ -29,32 +29,10 @@ def clean_log():
         lines = [line for line in f if line.startswith(f"[{today}") or line.startswith(f"[{yesterday}")]
     LOG_FILE.write_text("".join(lines), encoding="utf-8")
 
-def get_random_proxy():
-    if not PROXY_LIST_URL_FILE.exists():
-        log(f"[!] File proxy list URL tidak ditemukan: {PROXY_LIST_URL_FILE}")
-        return None
-    try:
-        url = PROXY_LIST_URL_FILE.read_text().strip()
-        with urllib.request.urlopen(url) as response:
-            lines = response.read().decode().splitlines()
-            proxies = [line.strip() for line in lines if line.strip() and ":" in line]
-            if not proxies:
-                return None
-            return random.choice(proxies)
-    except Exception as e:
-        log(f"[!] Gagal mengambil daftar proxy: {e}")
-        return None
-
-def get_yt_dlp_output(url, format_code="best[ext=m3u8]", proxy=None):
-    cmd = [
-        "yt-dlp", "--cookies", COOKIES_FILE, "--user-agent", USER_AGENT,
-        "-g", "-f", format_code, url
-    ]
-    if proxy:
-        cmd.extend(["--proxy", f"http://{proxy}"])
+def get_yt_dlp_output(url, format_code="best[ext=m3u8]"):
     try:
         result = subprocess.run(
-            cmd,
+            ["yt-dlp", "--cookies", COOKIES_FILE, "--user-agent", USER_AGENT, "-g", "-f", format_code, url],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             check=True,
@@ -65,15 +43,10 @@ def get_yt_dlp_output(url, format_code="best[ext=m3u8]", proxy=None):
     except subprocess.CalledProcessError:
         return ""
 
-def get_video_id(url, proxy=None):
-    cmd = [
-        "yt-dlp", "--cookies", COOKIES_FILE, "--get-id", url
-    ]
-    if proxy:
-        cmd.extend(["--proxy", f"http://{proxy}"])
+def get_video_id(url):
     try:
         result = subprocess.run(
-            cmd,
+            ["yt-dlp", "--cookies", COOKIES_FILE, "--get-id", url],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             check=True,
@@ -93,12 +66,6 @@ def main():
         log(f"[!] File {URL_FILE} tidak ditemukan")
         return
 
-    proxy = get_random_proxy()
-    if proxy:
-        log(f"[✓] Menggunakan proxy: {proxy}")
-    else:
-        log("[i] Tidak menggunakan proxy")
-
     with URL_FILE.open("r", encoding="utf-8") as f:
         for line in f:
             if not line.strip() or line.strip().startswith("#"):
@@ -110,17 +77,17 @@ def main():
             safe_name = safe_filename(name)
             log(f"[*] Memproses: {name}")
 
-            video_id = get_video_id(url, proxy)
+            video_id = get_video_id(url)
             if not video_id:
                 log(f"[!] Tidak bisa resolve video ID dari: {url}")
                 continue
 
             resolved_url = f"https://www.youtube.com/watch?v={video_id}"
-            m3u8_url = get_yt_dlp_output(resolved_url, "best[ext=m3u8]", proxy)
+            m3u8_url = get_yt_dlp_output(resolved_url, "best[ext=m3u8]")
 
             if not m3u8_url:
                 log(f"[!] Gagal ambil URL .m3u8, coba fallback format best")
-                m3u8_url = get_yt_dlp_output(resolved_url, "best", proxy)
+                m3u8_url = get_yt_dlp_output(resolved_url, "best")
 
             if not m3u8_url:
                 log(f"[!] Gagal ambil URL streaming untuk: {resolved_url}")
@@ -130,6 +97,7 @@ def main():
             out_path.write_text(m3u8_url, encoding="utf-8")
             log(f"[✓] URL streaming disimpan: {out_path.name}")
 
+    # Git stage, commit, push
     subprocess.run(["git", "config", "user.email", "actions@github.com"])
     subprocess.run(["git", "config", "user.name", "GitHub Actions"])
     subprocess.run(["git", "add", "."], check=False)
