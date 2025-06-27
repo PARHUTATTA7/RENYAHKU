@@ -29,6 +29,20 @@ jobs:
       - name: Run script
         run: python ekstrak.py
 
+      - name: Debug - Status Perubahan Git
+        run: |
+          echo "📁 File yang ada:"
+          ls -lah *.txt || echo "Tidak ada file .txt"
+
+          echo "🔍 Status Git:"
+          git status
+
+          echo "🔍 Perubahan Staging:"
+          git diff --cached || echo "(tidak ada perubahan)"
+
+          echo "🔍 Perubahan Working Directory:"
+          git diff || echo "(tidak ada perubahan)"
+
       # Opsional: commit hasil jika perlu simpan ke repo publik
       - name: Commit hasil widevine.json
         if: success()
