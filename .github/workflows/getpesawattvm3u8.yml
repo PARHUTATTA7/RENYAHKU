@@ -31,16 +31,34 @@ jobs:
       - name: Jalankan script Python
         run: python pesawatsry.py
 
+      - name: Debug - Status Perubahan Git
+        run: |
+          echo "📁 File yang ada:"
+          ls -lah *.txt || echo "Tidak ada file .txt"
+
+          echo "🔍 Status Git:"
+          git status
+
+          echo "🔍 Perubahan Staging:"
+          git diff --cached || echo "(tidak ada perubahan)"
+
+          echo "🔍 Perubahan Working Directory:"
+          git diff || echo "(tidak ada perubahan)"
+
       - name: Commit dan Push hasil jika ada perubahan
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add *.txt
+
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan, skip commit & push."
           else
+            echo "💾 Commit dilakukan..."
             git commit -m "Update Twitch M3U8 URL"
-            git pull --rebase origin master
-            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master
+
+            echo "🚀 Push ke GitHub..."
+            git pull --rebase origin master || echo "⚠️ Pull gagal, lanjutkan push"
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master || echo "⚠️ Push gagal"
           fi
