@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repo publik
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Diperlukan untuk reset dan diff
+          fetch-depth: 0  # Perlu agar diff bisa bekerja
 
       - name: Setup lingkungan
         run: |
@@ -26,29 +26,15 @@ jobs:
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           rm -rf private/.git
-          cp private/cookies.txt $HOME/cookies2.txt
-          cp private/urls.txt $HOME/urls.txt
+          cp private/cookies.txt $HOME/cookies2.txt || true
+          cp private/urls.txt $HOME/urls.txt || true
 
       - name: Jalankan skrip bash1.sh
         run: |
           chmod +x bash1.sh
           ./bash1.sh
 
-      - name: Debug - Status Perubahan Git
-        run: |
-          echo "📁 File yang tersedia:"
-          ls -lah *.txt || echo "Tidak ada file .txt"
-
-          echo "🔍 Status Git:"
-          git status
-
-          echo "🔍 Perubahan staging:"
-          git diff --cached || echo "(tidak ada perubahan)"
-
-          echo "🔍 Perubahan working directory:"
-          git diff || echo "(tidak ada perubahan)"
-
-      - name: Commit dan push perubahan
+      - name: Commit dan Push perubahan file .txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -58,17 +44,15 @@ jobs:
           # Set ulang remote agar bisa push
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Sinkronisasi ulang branch utama
-          git fetch origin
-          git reset --hard origin/master
+          # Tambahkan hanya file .txt yang bukan dari private/
+          find . -name "*.txt" -not -path "./private/*" -exec git add {} +
 
-          # Tambahkan semua file yang berubah
-          git add .
+          echo "📄 Perubahan yang di-staged:"
+          git diff --cached --name-only
 
-          # Commit jika ada perubahan
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan untuk di-commit"
           else
-            git commit -m "Update dari ${GITHUB_REPOSITORY}/bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+            git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master || echo "⚠️ Push gagal"
           fi
