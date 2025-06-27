@@ -34,6 +34,20 @@ jobs:
           chmod +x bash1.sh
           ./bash1.sh
 
+      - name: Debug - Status Perubahan Git
+        run: |
+          echo "📁 File yang ada:"
+          ls -lah *.txt || echo "Tidak ada file .txt"
+
+          echo "🔍 Status Git:"
+          git status
+
+          echo "🔍 Perubahan Staging:"
+          git diff --cached || echo "(tidak ada perubahan)"
+
+          echo "🔍 Perubahan Working Directory:"
+          git diff || echo "(tidak ada perubahan)"
+
       - name: Commit dan Push Perubahan
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
