@@ -28,7 +28,6 @@ jobs:
           rm -rf private/.git
           cp private/cookies.txt $HOME/cookies2.txt
           cp private/urls.txt $HOME/urls.txt
-          cp private/proxylisturl.txt $HOME/proxylisturl.txt
 
       - name: Jalankan bash1.sh
         run: |
