@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repo publik
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Perlu agar diff bisa bekerja
+          fetch-depth: 0  # Perlu agar diff & rebase bekerja
 
       - name: Setup lingkungan
         run: |
@@ -50,9 +50,16 @@ jobs:
           echo "📄 Perubahan yang di-staged:"
           git diff --cached --name-only
 
+          # Cek perubahan
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan untuk di-commit"
           else
             git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+
+            # Sinkronisasi dulu dengan remote agar tidak ditolak
+            git fetch origin
+            git pull --rebase origin master || exit 1
+
+            echo "🚀 Push ke GitHub..."
             git push origin master || echo "⚠️ Push gagal"
           fi
