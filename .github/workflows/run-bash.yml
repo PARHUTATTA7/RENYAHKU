@@ -26,8 +26,9 @@ jobs:
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           rm -rf private/.git
-          cp private/cookies.txt $HOME/cookies2.txt || true
-          cp private/urls.txt $HOME/urls.txt || true
+          cp private/cookies.txt $HOME/cookies2.txt
+          cp private/urls.txt $HOME/urls.txt
+          cp private/proxylisturl.txt $HOME/proxylisturl.txt
 
       - name: Jalankan bash1.sh
         run: |
