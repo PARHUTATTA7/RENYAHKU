@@ -41,25 +41,20 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Set ulang remote agar bisa push
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Tambahkan hanya file .txt yang bukan dari private/
           find . -name "*.txt" -not -path "./private/*" -exec git add {} +
+          git add -u  # Tambahkan ini untuk menangkap perubahan file yang sudah dilacak
 
           echo "📄 Perubahan yang di-staged:"
           git diff --cached --name-only
 
-          # Cek perubahan
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan untuk di-commit"
           else
             git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
-
-            # Sinkronisasi dulu dengan remote agar tidak ditolak
             git fetch origin
             git pull --rebase origin master || exit 1
-
             echo "🚀 Push ke GitHub..."
             git push origin master || echo "⚠️ Push gagal"
           fi
