@@ -3,59 +3,44 @@ name: Ekstrak jwpSources
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'  # Setiap 1 jam
+    - cron: '0 * * * *'
+
+concurrency:
+  group: commit-to-master
+  cancel-in-progress: false
 
 jobs:
   ekstrak:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo publik
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Ambil page_url.txt dari repo privat
-        run: |
+      - run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/page_url.txt $HOME/page_url.txt
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.11
 
-      - name: Install dependencies
-        run: |
-          pip install requests
+      - run: pip install requests
+      - run: python ekstrak.py
 
-      - name: Jalankan skrip ekstraksi
-        run: |
-          python ekstrak.py
-
-      - name: Commit hasil ke repo publik
-        if: success()
+      - name: Commit hasil
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-
-          # Tambahkan dan commit jika file berubah
           if ! git diff --quiet jajan_kuekue.json; then
-            echo "📦 File jajan_kuekue.json berubah, membuat commit..."
-
             git add jajan_kuekue.json
             git commit -m "Update Widevine DRM info - $(date '+%Y-%m-%d %H:%M:%S')"
-
-            # Pastikan rebase dengan upstream dulu sebelum push
             git fetch origin
             git pull --rebase origin master || exit 1
-
-            echo "🚀 Push ke repo..."
             git push origin master || echo "⚠️ Push gagal"
           else
-            echo "✅ File tidak berubah. Tidak perlu commit."
+            echo "✅ Tidak ada perubahan"
           fi
