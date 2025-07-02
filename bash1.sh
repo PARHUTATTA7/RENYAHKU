@@ -39,7 +39,10 @@ while IFS=" " read -r name url; do
         log "[!] Gagal ambil video dari playlist ($vid)"
         continue
       fi
-      echo "$direct_url" > "$OUTPUT_DIR/${safe_name}_$vid.txt"
+      {
+        echo "$direct_url"
+        echo "# Generated: $(date '+%Y-%m-%d %H:%M:%S')"
+      } > "$OUTPUT_DIR/${safe_name}_$vid.txt"
       log "[✓] URL dari playlist ($vid) disimpan: ${safe_name}_$vid.txt"
     done
   elif [[ "$url" == *.m3u8 ]]; then
@@ -50,7 +53,10 @@ while IFS=" " read -r name url; do
       log "[!] Gagal ambil URL (itag=18) untuk: $url"
       continue
     fi
-    echo "$merged_url" > "$OUTPUT_DIR/${safe_name}.txt"
+    {
+      echo "$merged_url"
+      echo "# Generated: $(date '+%Y-%m-%d %H:%M:%S')"
+    } > "$OUTPUT_DIR/${safe_name}.txt"
     log "[✓] URL (itag=18) disimpan: ${safe_name}.txt"
   fi
 done < "$URL_FILE"
