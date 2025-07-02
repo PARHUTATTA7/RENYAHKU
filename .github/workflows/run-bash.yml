@@ -1,7 +1,7 @@
 name: Jalankan Bash dari Repo Publik
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Bisa dijalankan manual dari GitHub UI
   schedule:
     - cron: '0 */4 * * *'  # Setiap 4 jam
 
@@ -43,8 +43,13 @@ jobs:
 
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
+          # 🛠 Rebase dulu sebelum commit untuk menghindari konflik yang menimpa perubahan lokal
+          git fetch origin
+          git pull --rebase origin master || exit 1
+
+          # 📝 Tambahkan semua file .txt (kecuali dari folder private)
           find . -name "*.txt" -not -path "./private/*" -exec git add {} +
-          git add -u  # Tambahkan ini untuk menangkap perubahan file yang sudah dilacak
+          git add -u
 
           echo "📄 Perubahan yang di-staged:"
           git diff --cached --name-only
@@ -53,8 +58,6 @@ jobs:
             echo "✅ Tidak ada perubahan untuk di-commit"
           else
             git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
-            git fetch origin
-            git pull --rebase origin master || exit 1
             echo "🚀 Push ke GitHub..."
             git push origin master || echo "⚠️ Push gagal"
           fi
