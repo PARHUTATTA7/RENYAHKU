@@ -13,29 +13,40 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: |
+
+      - name: Install Dependencies
+        run: |
           sudo apt-get update
           sudo apt-get install -y jq
           pip install -U yt-dlp
           mkdir -p out
-      - run: |
+
+      - name: Ambil File Private
+        run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           rm -rf private/.git
           cp private/cookies.txt $HOME/cookies2.txt || true
           cp private/urls.txt $HOME/urls.txt || true
-      - run: |
+
+      - name: Jalankan bash1.sh
+        run: |
           chmod +x bash1.sh
           ./bash1.sh
-      - env:
+
+      - name: Commit dan Push Perubahan
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git fetch origin
+          git reset --hard
+          git clean -fd
           git pull --rebase origin master || exit 1
           find . -name "*.txt" -not -path "./private/*" -exec git add {} +
           git add -u
@@ -45,3 +56,4 @@ jobs:
             git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master || echo "⚠️ Push gagal"
           fi
+          
