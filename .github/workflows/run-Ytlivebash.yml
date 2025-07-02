@@ -3,52 +3,37 @@ name: Jalankan Bash2 Python untuk M3U8
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'  # Setiap 1 jam
+    - cron: '0 * * * *'
+
+concurrency:
+  group: commit-to-master
+  cancel-in-progress: false
 
 jobs:
   run:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout repo publik (tempat script bash2.py berada)
-      - name: Checkout Repo Publik
-        uses: actions/checkout@v4
-
-      # 2. Install yt-dlp dan dependensi lain
-      - name: Install yt-dlp dan Python dependencies
-        run: |
+      - uses: actions/checkout@v4
+      - run: |
           sudo apt-get update
           sudo apt-get install -y jq
           pip install -U yt-dlp
-
-      # 3. Ambil cookies.txt dan urls_live.txt dari repo privat
-      - name: Ambil cookies dan URL dari Repo Privat
-        run: |
+      - run: |
           git clone https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/cookies.txt $HOME/cookies.txt
           cp private/urls_live.txt $HOME/urls_live.txt
-
-      # 4. Jalankan script bash2.py
-      - name: Jalankan bash2.py
-        run: |
-          python3 bash2.py
-
-      # 5. Commit dan Push hasil
-      - name: Commit dan Push Perubahan
-        env:
+      - run: python3 bash2.py
+      - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-
           git fetch origin
-          git reset --hard origin/master
-
+          git pull --rebase origin master || exit 1
           git add .
           if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan untuk di-commit"
+            echo "✅ Tidak ada perubahan"
           else
             git commit -m "Update dari ${GITHUB_REPOSITORY}/bash2.py - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master || echo "⚠️ Push gagal"
