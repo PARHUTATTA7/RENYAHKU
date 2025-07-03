@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout Repo Publik
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get complete history for proper rebasing
 
       - name: Install yt-dlp dan Python dependencies
         run: |
@@ -21,7 +23,7 @@ jobs:
 
       - name: Ambil cookies dan URL dari Repo Privat
         run: |
-          git clone https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
+          git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/cookies.txt $HOME/cookies.txt
           cp private/urls_live.txt $HOME/urls_live.txt
 
@@ -32,17 +34,32 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Configure Git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
+          # Create timestamp file
           echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_bash2
 
+          # Stash changes before rebase
+          git stash
+
+          # Sync with remote
+          git fetch origin
+          git rebase origin/master || git rebase --abort
+
+          # Restore stashed changes
+          git stash pop || true
+
+          # Add files
           git add -A
           git add .last_bash2
 
-          git fetch origin
-          git pull --rebase origin master || true
-
-          git commit -m "Update dari bash2.py - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty || echo "✅ Tidak ada perubahan"
-          git push origin master || echo "⚠️ Push gagal"
+          # Commit only if changes exist
+          if git diff-index --quiet HEAD --; then
+            echo "✅ Tidak ada perubahan"
+          else
+            git commit -m "Update dari bash2.py - $(date '+%Y-%m-%d %H:%M:%S')"
+            git push origin master
+          fi
