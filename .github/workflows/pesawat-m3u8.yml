@@ -1,4 +1,4 @@
-name: Twitch M3U8 Grabber
+name: Pesawat M3U8 Grabber
 
 on:
   workflow_dispatch:
