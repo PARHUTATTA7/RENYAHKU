@@ -13,13 +13,13 @@ jobs:
       - name: 🧾 Checkout Repo Publik
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Important for proper git history
+          fetch-depth: 0
 
       - name: 📄 Ambil page_url.txt dari Repo Privat
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/page_url.txt $HOME/page_url.txt
-          rm -rf private  # Clean up private repo
+          rm -rf private  # Clean up immediately after use
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -44,31 +44,19 @@ jobs:
           # Update timestamp file
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_ekstrak
 
-          # Stash any changes before sync
-          git stash
+          # Clean up any remaining private directory
+          if [ -d "private" ]; then
+            git clean -fd private  # Force remove directory
+          fi
 
-          # Sync with remote
-          git fetch origin
-          git rebase origin/master || git rebase --abort
+          # Add only the files we want to track
+          git add .last_ekstrak jajan_kuekue.json
 
-          # Restore changes
-          git stash pop || true
-
-          # Add files
-          git add jajan_kuekue.json .last_ekstrak
-
-          # Check for changes in both files
-          CHANGES_IN_JSON=$(git diff --cached --name-only | grep -c 'jajan_kuekue.json')
-          CHANGES_IN_TIMESTAMP=$(git diff --cached --name-only | grep -c '.last_ekstrak')
-
-          # Commit logic
-          if [ $CHANGES_IN_JSON -gt 0 ] || [ $CHANGES_IN_TIMESTAMP -gt 0 ]; then
-            if [ $CHANGES_IN_JSON -gt 0 ]; then
-              git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')"
-            else
-              git commit -m "Update last extraction timestamp - $(date '+%Y-%m-%d %H:%M:%S')"
-            fi
-            git push origin master
-          else
+          # Check if there are changes to commit
+          if git diff-index --quiet HEAD --; then
             echo "✅ Tidak ada perubahan yang perlu di-commit"
+          else
+            git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')"
+            git pull --rebase origin master  # Rebase before push
+            git push origin master
           fi
