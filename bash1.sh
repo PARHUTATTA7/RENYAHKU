@@ -39,11 +39,20 @@ while IFS=" " read -r name url; do
         log "[!] Gagal ambil video dari playlist ($vid)"
         continue
       fi
+      output_file="${safe_name}_$vid.txt"
+      tmp_file="${output_file}.tmp"
       {
         echo "$direct_url"
         echo "# Generated: $(date '+%Y-%m-%d %H:%M:%S')"
-      } > "$OUTPUT_DIR/${safe_name}_$vid.txt"
-      log "[✓] URL dari playlist ($vid) disimpan: ${safe_name}_$vid.txt"
+      } > "$tmp_file"
+
+      if ! cmp -s "$tmp_file" "$output_file"; then
+        mv "$tmp_file" "$output_file"
+        log "[✓] Diupdate: $output_file"
+      else
+        rm "$tmp_file"
+        log "[=] Tidak berubah: $output_file"
+      fi
     done
   elif [[ "$url" == *.m3u8 ]]; then
     log "[i] Lewatkan M3U8: $url"
@@ -53,10 +62,20 @@ while IFS=" " read -r name url; do
       log "[!] Gagal ambil URL (itag=18) untuk: $url"
       continue
     fi
+
+    output_file="${safe_name}.txt"
+    tmp_file="${output_file}.tmp"
     {
       echo "$merged_url"
       echo "# Generated: $(date '+%Y-%m-%d %H:%M:%S')"
-    } > "$OUTPUT_DIR/${safe_name}.txt"
-    log "[✓] URL (itag=18) disimpan: ${safe_name}.txt"
+    } > "$tmp_file"
+
+    if ! cmp -s "$tmp_file" "$output_file"; then
+      mv "$tmp_file" "$output_file"
+      log "[✓] Diupdate: $output_file"
+    else
+      rm "$tmp_file"
+      log "[=] Tidak berubah: $output_file"
+    fi
   fi
 done < "$URL_FILE"
