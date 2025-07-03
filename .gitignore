@@ -1,4 +1,4 @@
- # Python cache dan bytecode
+# Python cache dan bytecode
 __pycache__/
 *.py[cod]
 *.pyo
@@ -7,9 +7,14 @@ __pycache__/
 # Bash cache / sementara
 *.sh~
 
-# Log files
+# Log files (umum)
 *.log
-yt-download.log
+!logs/*.log               # ⬅️ IZINKAN log di folder logs/
+!yt-m3u8.log              # ⬅️ IZINKAN log spesifik jika tetap di root
+!yt-download.log          # ⬅️ IZINKAN log spesifik jika ingin tetap bisa dipush
+
+# Marker untuk workflow
+!.last_*                  # ⬅️ Izinkan file seperti .last_bash2
 
 # Cookies (privat)
 cookies.txt
