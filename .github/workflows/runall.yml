@@ -3,8 +3,8 @@ name: Semua Workflow Gabungan
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'     # Setiap jam (untuk YML1-4)
-    - cron: '0 */4 * * *'   # Setiap 4 jam (untuk bash1.sh)
+    - cron: '0 * * * *'     # Tiap jam
+    - cron: '0 */4 * * *'   # Tiap 4 jam
 
 jobs:
   run_bash2_py:
@@ -34,8 +34,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_marker
-          git add . .last_run_marker
+          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_bash2py
+          git add . .last_run_bash2py
           git pull --rebase origin master || true
           git commit -m "Update dari bash2.py - $(date '+%Y-%m-%d %H:%M:%S')" || echo "✅ Tidak ada perubahan"
           git push origin master || echo "⚠️ Push gagal"
@@ -71,7 +71,8 @@ jobs:
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git fetch origin
           git reset --hard origin/master
-          git add jajan_kuekue.json
+          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_jwp
+          git add jajan_kuekue.json .last_run_jwp
           git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
           git push origin master || echo "⚠️ Push gagal"
 
@@ -100,9 +101,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_marker
-          git add -u
-          git add .last_run_marker
+          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_twitch
+          git add -u .last_run_twitch
           git commit -m "Update Twitch M3U8 URL - $(date '+%Y-%m-%d %H:%M:%S')" || echo "✅ Tidak ada perubahan"
           git pull --rebase origin master || true
           git push origin master || echo "⚠️ Push gagal"
@@ -139,7 +139,8 @@ jobs:
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git fetch origin
           git reset --hard origin/master
-          git add TESSTSS7.m3u8
+          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_tesst7
+          git add TESSTSS7.m3u8 .last_run_tesst7
           git commit -m "Update TESSTSS7.m3u8 - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
           git push origin master || echo "⚠️ Push gagal"
 
@@ -177,8 +178,8 @@ jobs:
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git fetch origin
           git pull --rebase origin master || true
-          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_marker
+          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_bash1
           find . -name "*.txt" -not -path "./private/*" -exec git add {} +
-          git add .last_run_marker
+          git add .last_run_bash1
           git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || echo "✅ Tidak ada perubahan"
           git push origin master || echo "⚠️ Push gagal"
