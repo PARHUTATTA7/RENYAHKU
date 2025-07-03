@@ -10,23 +10,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: ⬇️ Checkout Repo
+        uses: actions/checkout@v4
 
-      - name: Setup Python & streamlink
+      - name: ⚙️ Setup Python & Streamlink
         run: |
           sudo apt update
           sudo apt install -y streamlink
           pip install requests
 
-      - name: Ambil channel.txt
+      - name: 📄 Ambil channel.txt dari Repo Privat
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/channel.txt $HOME/channel.txt
 
-      - name: Jalankan Python
+      - name: ▶️ Jalankan Python
         run: python pesawatsry.py
 
-      - name: Commit dan Push
+      - name: ✅ Commit & Push Perubahan
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -35,7 +36,12 @@ jobs:
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
+
           git add -u
           git add .last_twitch
-          git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
+
+          git fetch origin
+          git pull --rebase origin master || true
+
+          git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty || echo "✅ Tidak ada perubahan"
           git push origin master || echo "⚠️ Push gagal"
