@@ -5,20 +5,10 @@ USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/
 COOKIES_FILE="$HOME/cookies2.txt"
 URL_FILE="$HOME/urls.txt"
 OUTPUT_DIR="$(pwd)"
-LOG_FILE="$OUTPUT_DIR/yt-download.log"
 
-# Bersihkan log, hanya simpan hari ini dan kemarin
-mkdir -p "$OUTPUT_DIR"
-if [ -f "$LOG_FILE" ]; then
-  tmp_log="${LOG_FILE}.tmp"
-  today=$(date '+%Y-%m-%d')
-  yesterday=$(date -d "yesterday" '+%Y-%m-%d')
-  grep -E "^\[($today|$yesterday)" "$LOG_FILE" > "$tmp_log"
-  mv "$tmp_log" "$LOG_FILE"
-fi
-
+# Fungsi log: hanya tampilkan ke terminal, tidak disimpan ke file
 log() {
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
 
 if [ ! -f "$URL_FILE" ]; then
