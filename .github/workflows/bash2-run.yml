@@ -38,8 +38,8 @@ jobs:
 
           echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_bash2
 
-          # Hindari men-stage file dalam .github/
-          find . -type f -not -path "./.github/*" -exec git add {} +
+          # Tambahkan semua file selain dari folder 'private' dan '.github'
+          find . -type f -not -path "./private/*" -not -path "./.github/*" -exec git add {} +
 
           git fetch origin
           git pull --rebase origin master || true
