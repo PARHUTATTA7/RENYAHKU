@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: ⬇️ Checkout Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get full history for proper rebasing
 
       - name: ⚙️ Setup Python & Streamlink
         run: |
@@ -31,17 +33,32 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Configure Git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
+          # Create timestamp file
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
 
+          # Stash any potential changes before rebase
+          git stash
+
+          # Sync with remote
+          git fetch origin
+          git rebase origin/master || git rebase --abort
+
+          # Apply stashed changes back
+          git stash pop || true
+
+          # Add files to commit
           git add -u
           git add .last_twitch
 
-          git fetch origin
-          git pull --rebase origin master || true
-
-          git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty || echo "✅ Tidak ada perubahan"
-          git push origin master || echo "⚠️ Push gagal"
+          # Commit only if there are changes
+          if git diff-index --quiet HEAD --; then
+            echo "✅ Tidak ada perubahan"
+          else
+            git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')"
+            git push origin master
+          fi
