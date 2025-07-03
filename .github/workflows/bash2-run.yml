@@ -28,7 +28,7 @@ jobs:
       - name: Jalankan bash2.py
         run: python3 bash2.py
 
-      - name: Commit dan Push
+      - name: Commit dan Push hasil
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -38,10 +38,8 @@ jobs:
 
           echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_bash2
 
-          # Tambahkan semua file termasuk yang biasa di-ignore
-          git add -f .last_bash2
-          git add -f yt-m3u8.log || true
-          git add -u
+          git add -A
+          git add .last_bash2
 
           git fetch origin
           git pull --rebase origin master || true
