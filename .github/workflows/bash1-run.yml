@@ -38,8 +38,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_bash1
+
           find . -name "*.txt" -not -path "./private/*" -exec git add {} +
           git add .last_bash1
-          git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
+
+          # 🔁 Sinkronisasi dengan remote sebelum commit
+          git fetch origin
+          git pull --rebase origin master || true
+
+          git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty || echo "✅ Tidak ada perubahan"
           git push origin master || echo "⚠️ Push gagal"
