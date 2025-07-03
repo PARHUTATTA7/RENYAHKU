@@ -3,11 +3,12 @@ name: Pesawat M3U8 Grabber
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 * * * *'  # Setiap jam
 
 jobs:
   twitch_m3u8:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +33,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
-          git add -u .last_twitch
+          git add -u
+          git add .last_twitch
           git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
           git push origin master || echo "⚠️ Push gagal"
