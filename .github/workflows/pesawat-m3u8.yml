@@ -1,0 +1,38 @@
+name: Twitch M3U8 Grabber
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
+
+jobs:
+  twitch_m3u8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python & streamlink
+        run: |
+          sudo apt update
+          sudo apt install -y streamlink
+          pip install requests
+
+      - name: Ambil channel.txt
+        run: |
+          git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
+          cp private/channel.txt $HOME/channel.txt
+
+      - name: Jalankan Python
+        run: python pesawatsry.py
+
+      - name: Commit dan Push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
+          git add -u .last_twitch
+          git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
+          git push origin master || echo "⚠️ Push gagal"
