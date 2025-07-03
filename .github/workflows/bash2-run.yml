@@ -38,8 +38,10 @@ jobs:
 
           echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_bash2
 
-          # Tambahkan semua file selain dari folder 'private' dan '.github'
-          find . -type f -not -path "./private/*" -not -path "./.github/*" -exec git add {} +
+          # Tambahkan semua file termasuk yang biasa di-ignore
+          git add -f .last_bash2
+          git add -f yt-m3u8.log || true
+          git add -u
 
           git fetch origin
           git pull --rebase origin master || true
