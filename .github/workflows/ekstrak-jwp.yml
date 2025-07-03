@@ -19,6 +19,7 @@ jobs:
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/page_url.txt $HOME/page_url.txt
+          rm -rf private  # Clean up private repo
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -35,29 +36,39 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Configure Git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
+          # Update timestamp file
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_ekstrak
 
-          # Stash any potential changes before rebase
+          # Stash any changes before sync
           git stash
 
           # Sync with remote
           git fetch origin
           git rebase origin/master || git rebase --abort
 
-          # Apply stashed changes if any
+          # Restore changes
           git stash pop || true
 
-          # Add files to commit
+          # Add files
           git add jajan_kuekue.json .last_ekstrak
 
-          # Check if there are changes to commit
-          if git diff-index --quiet HEAD --; then
-            echo "✅ Tidak ada perubahan"
-          else
-            git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')"
+          # Check for changes in both files
+          CHANGES_IN_JSON=$(git diff --cached --name-only | grep -c 'jajan_kuekue.json')
+          CHANGES_IN_TIMESTAMP=$(git diff --cached --name-only | grep -c '.last_ekstrak')
+
+          # Commit logic
+          if [ $CHANGES_IN_JSON -gt 0 ] || [ $CHANGES_IN_TIMESTAMP -gt 0 ]; then
+            if [ $CHANGES_IN_JSON -gt 0 ]; then
+              git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')"
+            else
+              git commit -m "Update last extraction timestamp - $(date '+%Y-%m-%d %H:%M:%S')"
+            fi
             git push origin master
+          else
+            echo "✅ Tidak ada perubahan yang perlu di-commit"
           fi
