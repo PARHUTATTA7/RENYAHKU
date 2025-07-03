@@ -41,12 +41,24 @@ jobs:
 
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_bash1
 
+          # Stash any potential changes before rebase
+          git stash
+
+          # Sync with remote
+          git fetch origin
+          git rebase origin/master || git rebase --abort
+
+          # Apply stashed changes if any
+          git stash pop || true
+
+          # Add files to commit
           find . -name "*.txt" -not -path "./private/*" -exec git add {} +
           git add .last_bash1
 
-          # 🔁 Sinkronisasi dengan remote sebelum commit
-          git fetch origin
-          git pull --rebase origin master || true
-
-          git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty || echo "✅ Tidak ada perubahan"
-          git push origin master || echo "⚠️ Push gagal"
+          # Check if there are changes to commit
+          if git diff-index --quiet HEAD --; then
+            echo "✅ Tidak ada perubahan"
+          else
+            git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+            git push origin master
+          fi
