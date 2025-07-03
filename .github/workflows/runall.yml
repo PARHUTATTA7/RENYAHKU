@@ -3,8 +3,8 @@ name: Semua Workflow Gabungan
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'     # Tiap jam
-    - cron: '0 */4 * * *'   # Tiap 4 jam
+    - cron: '0 * * * *'     # Setiap 1 jam
+    - cron: '0 */4 * * *'   # Untuk YML5 tiap 4 jam
 
 jobs:
   run_bash2_py:
@@ -34,17 +34,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_bash2py
-          git add . .last_run_bash2py
-          git pull --rebase origin master || true
-          git commit -m "Update dari bash2.py - $(date '+%Y-%m-%d %H:%M:%S')" || echo "✅ Tidak ada perubahan"
+          git fetch origin
+          git reset --hard origin/master
+
+          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_bash2
+          git add . .last_run_bash2
+          git commit -m "Update dari bash2.py - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
           git push origin master || echo "⚠️ Push gagal"
 
   ekstrak_jwpSources:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo publik
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Ambil page_url.txt dari repo privat
         run: |
@@ -71,8 +72,9 @@ jobs:
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git fetch origin
           git reset --hard origin/master
-          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_jwp
-          git add jajan_kuekue.json .last_run_jwp
+
+          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_ekstrak
+          git add jajan_kuekue.json .last_run_ekstrak
           git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
           git push origin master || echo "⚠️ Push gagal"
 
@@ -101,36 +103,39 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          git fetch origin
+          git reset --hard origin/master
+
           echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_twitch
-          git add -u .last_run_twitch
-          git commit -m "Update Twitch M3U8 URL - $(date '+%Y-%m-%d %H:%M:%S')" || echo "✅ Tidak ada perubahan"
-          git pull --rebase origin master || true
+          git add -u
+          git add .last_run_twitch
+          git commit -m "Update Twitch M3U8 URL - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
           git push origin master || echo "⚠️ Push gagal"
 
   grab_tesst7:
     runs-on: ubuntu-latest
     steps:
-      - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: 3.11
 
-      - name: 📦 Install Python dependencies
+      - name: Install dependencies
         run: pip install requests
 
-      - name: 🔐 Download `daylidata.txt` dari repo privat
+      - name: Ambil daylidata.txt dari repo privat
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} temp_private
           cp temp_private/daylidata.txt $HOME/daylidata.txt
           rm -rf temp_private
 
-      - name: ▶️ Jalankan Python
+      - name: Jalankan getdaily.py
         run: python getdaily.py
 
-      - name: ✅ Commit & Push jika berubah (atau tidak)
+      - name: Commit dan Push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -139,6 +144,7 @@ jobs:
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git fetch origin
           git reset --hard origin/master
+
           echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_tesst7
           git add TESSTSS7.m3u8 .last_run_tesst7
           git commit -m "Update TESSTSS7.m3u8 - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
@@ -158,7 +164,7 @@ jobs:
           pip install -U yt-dlp
           mkdir -p out
 
-      - name: Ambil file privat
+      - name: Ambil cookies dan URL dari repo privat
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/cookies.txt $HOME/cookies2.txt || true
@@ -177,9 +183,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git fetch origin
-          git pull --rebase origin master || true
+          git reset --hard origin/master
+
           echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_run_bash1
           find . -name "*.txt" -not -path "./private/*" -exec git add {} +
           git add .last_run_bash1
-          git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" || echo "✅ Tidak ada perubahan"
+          git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty
           git push origin master || echo "⚠️ Push gagal"
