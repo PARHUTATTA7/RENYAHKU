@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: 🧾 Checkout Repo Publik
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Important for proper git history
 
       - name: 📄 Ambil page_url.txt dari Repo Privat
         run: |
@@ -39,10 +41,23 @@ jobs:
 
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_ekstrak
 
+          # Stash any potential changes before rebase
+          git stash
+
+          # Sync with remote
+          git fetch origin
+          git rebase origin/master || git rebase --abort
+
+          # Apply stashed changes if any
+          git stash pop || true
+
+          # Add files to commit
           git add jajan_kuekue.json .last_ekstrak
 
-          git fetch origin
-          git pull --rebase origin master || true
-
-          git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')" --allow-empty || echo "✅ Tidak ada perubahan"
-          git push origin master || echo "⚠️ Push gagal"
+          # Check if there are changes to commit
+          if git diff-index --quiet HEAD --; then
+            echo "✅ Tidak ada perubahan"
+          else
+            git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')"
+            git push origin master
+          fi
