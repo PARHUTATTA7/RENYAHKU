@@ -53,13 +53,19 @@ jobs:
           # Restore stashed changes
           git stash pop || true
 
-          # Add specific files
+          # Add and commit both files
           git add TESSTSS7.m3u8 .last_tesst7
 
-          # Commit only if there are changes
-          if git diff-index --quiet HEAD --; then
-            echo "✅ Tidak ada perubahan pada TESSTSS7.m3u8"
-          else
+          # Check if there are changes to commit
+          if ! git diff-index --quiet HEAD --; then
             git commit -m "Update TESSTSS7.m3u8 - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master
+          else
+            # If only .last_tesst7 changed
+            if git diff --name-only --cached | grep -q '.last_tesst7'; then
+              git commit -m "Update last test timestamp - $(date '+%Y-%m-%d %H:%M:%S')"
+              git push origin master
+            else
+              echo "✅ Tidak ada perubahan yang perlu di-commit"
+            fi
           fi
