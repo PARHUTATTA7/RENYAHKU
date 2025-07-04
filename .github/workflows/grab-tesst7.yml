@@ -1,4 +1,4 @@
-name: Grab Tesst7 M3U8
+name: Grab Tesst7 M3U8 
 
 on:
   workflow_dispatch:
@@ -35,41 +35,33 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Configure Git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Create timestamp file
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_tesst7
-
-          # Add and commit any existing changes first
           git add TESSTSS7.txt .last_tesst7
+
+          # Commit sementara jika ada perubahan
           if ! git diff-index --quiet HEAD --; then
-            git commit -m "Temporary commit for rebase - $(date '+%Y-%m-%d %H:%M:%S')"
+            git commit -m "Temporary commit before rebase"
           fi
 
-          # Sync with remote using rebase
+          # Stash dulu jika masih ada perubahan belum ter-add
+          git stash --include-untracked || true
+
+          # Pull & rebase
           git fetch origin
           git rebase origin/master || git rebase --abort
 
-          # Add files again after rebase
+          # Restore stash jika ada
+          git stash pop || true
+
           git add TESSTSS7.txt .last_tesst7
 
-          # Check if there are changes to commit
           if ! git diff-index --quiet HEAD --; then
-            # Reset the temporary commit if it exists
-            if git log -1 --pretty=%B | grep -q "Temporary commit for rebase"; then
-              git reset HEAD~1
-              git add TESSTSS7.txt .last_tesst7
-            fi
-            
-            if git diff --cached --quiet TESSTSS7.txt; then
-              git commit -m "Update last test timestamp - $(date '+%Y-%m-%d %H:%M:%S')"
-            else
-              git commit -m "Update TESSTSS7.txt - $(date '+%Y-%m-%d %H:%M:%S')"
-            fi
+            git commit -m "Update TESSTSS7.txt - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master
           else
-            echo "✅ Tidak ada perubahan yang perlu di-commit"
+            echo "✅ Tidak ada perubahan untuk di-push"
           fi
