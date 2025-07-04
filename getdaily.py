@@ -5,7 +5,7 @@ from pathlib import Path
 # Lokasi file konfigurasi & cache
 DAYLIDATA = Path.home() / "daylidata.txt"
 PROXY_CACHE_FILE = Path("proxy_ok.txt")
-FILE_NAME = "TESSTSS7.m3u8"
+FILE_NAME = "TESSTSS7.txt"
 session = requests.Session()
 
 def load_config(path):
@@ -65,7 +65,7 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
         hls_url = qualities[best][0]["url"]
         print(f"[✓] Dapat URL HLS: {hls_url}")
 
-        # Simpan URL saja
+        # Simpan URL ke file TXT
         with open(FILE_NAME, "w") as f:
             f.write(hls_url + "\n")
 
@@ -76,7 +76,7 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
     except Exception as e:
         print(f"[×] Gagal proxy {proxy}: {e}")
         return False
-
+        
 def fallback_write(fallback_url):
     try:
         print(f"[!] Menggunakan fallback: {fallback_url}")
