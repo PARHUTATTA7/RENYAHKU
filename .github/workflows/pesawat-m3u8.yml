@@ -13,7 +13,7 @@ jobs:
       - name: ⬇️ Checkout Repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Get full history for proper rebasing
+          fetch-depth: 0
 
       - name: ⚙️ Setup Python & Streamlink
         run: |
@@ -25,6 +25,7 @@ jobs:
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/channel.txt $HOME/channel.txt
+          rm -rf private  # Clean up immediately
 
       - name: ▶️ Jalankan Python
         run: python pesawatsry.py
@@ -38,27 +39,24 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Create timestamp file
+          # Update timestamp
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
 
-          # Stash any potential changes before rebase
-          git stash
+          # Pull latest changes instead of rebase
+          git pull origin master
 
-          # Sync with remote
-          git fetch origin
-          git rebase origin/master || git rebase --abort
+          # Add specific files (not using -u to avoid unwanted files)
+          git add sriwijayatvonline.txt padang_tv.txt .last_twitch
 
-          # Apply stashed changes back
-          git stash pop || true
-
-          # Add files to commit
-          git add -u
-          git add .last_twitch
-
-          # Commit only if there are changes
-          if git diff-index --quiet HEAD --; then
-            echo "✅ Tidak ada perubahan"
-          else
+          # Check for actual changes
+          if ! git diff-index --quiet HEAD --; then
+            # Check which files changed
+            CHANGED_FILES=$(git diff --name-only --cached)
+            echo "Changed files: $CHANGED_FILES"
+            
             git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master
+            echo "✅ Perubahan berhasil di-push"
+          else
+            echo "✅ Tidak ada perubahan pada file yang di-track"
           fi
