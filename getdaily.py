@@ -63,25 +63,13 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
 
         best = sorted(qualities.keys(), reverse=True)[0]
         hls_url = qualities[best][0]["url"]
-        print(f"[✓] HLS: {hls_url}")
+        print(f"[✓] Dapat URL HLS: {hls_url}")
 
-        # Coba fetch isi m3u8
-        try:
-            m3u_res = session.get(hls_url, headers={
-                "User-Agent": headers["User-Agent"],
-                "Referer": "https://www.dailymotion.com/"
-            }, proxies=proxies, timeout=10)
-            m3u_res.raise_for_status()
+        # Simpan URL saja
+        with open(FILE_NAME, "w") as f:
+            f.write(hls_url + "\n")
 
-            with open(FILE_NAME, "w") as f:
-                f.write(m3u_res.text)
-
-            print(f"[✓] Simpan ke {FILE_NAME}")
-        except Exception as m3u_error:
-            print(f"[!] Tidak bisa ambil isi .m3u8 langsung: {m3u_error}")
-            with open(FILE_NAME, "w") as f:
-                f.write(f"#EXTM3U\n# Proxy OK tapi fetch gagal\n# HLS: {hls_url}\n")
-
+        print(f"[✓] Simpan URL ke {FILE_NAME}")
         save_working_proxy(proxy)
         return True
 
