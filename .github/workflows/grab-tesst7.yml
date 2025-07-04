@@ -12,7 +12,7 @@ jobs:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Get complete history for proper rebasing
+          fetch-depth: 0
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -40,31 +40,30 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Create timestamp file
+          # Update timestamp file
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_tesst7
 
-          # Stash any changes before rebase
-          git stash
+          # Pull latest changes with rebase to avoid conflicts
+          git pull --rebase origin master
 
-          # Sync with remote
-          git fetch origin
-          git rebase origin/master || git rebase --abort
-
-          # Restore stashed changes
-          git stash pop || true
-
-          # Add and commit both files
+          # Add only the files we want to track
           git add TESSTSS7.txt .last_tesst7
 
-          # Check if there are changes to commit
+          # Check for changes
           if ! git diff-index --quiet HEAD --; then
-            git commit -m "Update TESSTSS7.txt - $(date '+%Y-%m-%d %H:%M:%S')"
-            git push origin master
-          else
-            # If only .last_tesst7 changed
-            if git diff --name-only --cached | grep -q '.last_tesst7'; then
-              git commit -m "Update last test timestamp - $(date '+%Y-%m-%d %H:%M:%S')"
-              git push origin master
+            # Determine which files changed
+            CHANGED_FILES=$(git diff --name-only --cached)
+            echo "Changed files: $CHANGED_FILES"
+            
+            if echo "$CHANGED_FILES" | grep -q 'TESSTSS7.txt'; then
+              git commit -m "Update TESSTSS7.txt - $(date '+%Y-%m-%d %H:%M:%S')"
             else
-              echo "✅ Tidak ada perubahan yang perlu di-commit"
+              git commit -m "Update last test timestamp - $(date '+%Y-%m-%d %H:%M:%S')"
             fi
+            
+            # Force push if necessary (only for this linear history workflow)
+            git push origin master
+            echo "✅ Update pushed successfully"
+          else
+            echo "✅ No changes to commit"
+          fi
