@@ -1,1 +1,1 @@
-https://cdndirector.dailymotion.com/cdn/live/video/x8qckyq.m3u8?sec=fp0_hlELzZ6eEsGQ-0oy8rAzDCBnEkn8pEFlPSzyimj8Mem24yDWTY8S04UugP_iqoWQOzyBbzZOzlbb7jDP3w&dmTs=879140&dmV1st=4e1cbfd2-2c3a-4106-98f9-85fd5db18cd5
+https://cdndirector.dailymotion.com/cdn/live/video/x8qckyq.m3u8?sec=ts94hdbBTyyiiBRJJOI6Nlcs3xX_GMbaV3Q5iTV5xPnC33wn0ee3j7OW0eebaSAENLL9vMceAkm6P3SN3NI-rA&dmTs=455683&dmV1st=f3d99fe0-4bb6-4a09-a7d0-097a7f6b4cec
