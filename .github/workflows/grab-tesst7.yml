@@ -39,29 +39,20 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_tesst7
-          git add TESSTSS7.txt .last_tesst7
+          git pull origin master
 
-          # Commit sementara jika ada perubahan
-          if ! git diff-index --quiet HEAD --; then
-            git commit -m "Temporary commit before rebase"
-          fi
+          # Tambahkan file utama
+          git add TESSTSS7.txt
 
-          # Stash dulu jika masih ada perubahan belum ter-add
-          git stash --include-untracked || true
+          if git diff --cached --quiet; then
+            echo "⚠️ Tidak ada perubahan pada TESSTSS7.txt, skip update timestamp"
+          else
+            echo "✅ Ada perubahan pada TESSTSS7.txt, lanjut update timestamp"
 
-          # Pull & rebase
-          git fetch origin
-          git rebase origin/master || git rebase --abort
+            # Baru update timestamp
+            echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_tesst7
+            git add .last_tesst7
 
-          # Restore stash jika ada
-          git stash pop || true
-
-          git add TESSTSS7.txt .last_tesst7
-
-          if ! git diff-index --quiet HEAD --; then
             git commit -m "Update TESSTSS7.txt - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master
-          else
-            echo "✅ Tidak ada perubahan untuk di-push"
           fi
