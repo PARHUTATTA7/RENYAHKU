@@ -40,30 +40,36 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Update timestamp file
+          # Create timestamp file
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_tesst7
 
-          # Pull latest changes with rebase to avoid conflicts
-          git pull --rebase origin master
+          # Add and commit any existing changes first
+          git add TESSTSS7.txt .last_tesst7
+          if ! git diff-index --quiet HEAD --; then
+            git commit -m "Temporary commit for rebase - $(date '+%Y-%m-%d %H:%M:%S')"
+          fi
 
-          # Add only the files we want to track
+          # Sync with remote using rebase
+          git fetch origin
+          git rebase origin/master || git rebase --abort
+
+          # Add files again after rebase
           git add TESSTSS7.txt .last_tesst7
 
-          # Check for changes
+          # Check if there are changes to commit
           if ! git diff-index --quiet HEAD --; then
-            # Determine which files changed
-            CHANGED_FILES=$(git diff --name-only --cached)
-            echo "Changed files: $CHANGED_FILES"
-            
-            if echo "$CHANGED_FILES" | grep -q 'TESSTSS7.txt'; then
-              git commit -m "Update TESSTSS7.txt - $(date '+%Y-%m-%d %H:%M:%S')"
-            else
-              git commit -m "Update last test timestamp - $(date '+%Y-%m-%d %H:%M:%S')"
+            # Reset the temporary commit if it exists
+            if git log -1 --pretty=%B | grep -q "Temporary commit for rebase"; then
+              git reset HEAD~1
+              git add TESSTSS7.txt .last_tesst7
             fi
             
-            # Force push if necessary (only for this linear history workflow)
+            if git diff --cached --quiet TESSTSS7.txt; then
+              git commit -m "Update last test timestamp - $(date '+%Y-%m-%d %H:%M:%S')"
+            else
+              git commit -m "Update TESSTSS7.txt - $(date '+%Y-%m-%d %H:%M:%S')"
+            fi
             git push origin master
-            echo "✅ Update pushed successfully"
           else
-            echo "✅ No changes to commit"
+            echo "✅ Tidak ada perubahan yang perlu di-commit"
           fi
