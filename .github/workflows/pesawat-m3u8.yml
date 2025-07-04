@@ -3,12 +3,11 @@ name: Pesawat M3U8 Grabber
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'  # Setiap jam
+    - cron: '0 * * * *'
 
 jobs:
   twitch_m3u8:
     runs-on: ubuntu-latest
-
     steps:
       - name: ⬇️ Checkout Repo
         uses: actions/checkout@v4
@@ -25,12 +24,17 @@ jobs:
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/channel.txt $HOME/channel.txt
-          rm -rf private  # Clean up immediately
+          rm -rf private
 
       - name: ▶️ Jalankan Python
         run: python pesawatsry.py
 
-      - name: ✅ Commit & Push Perubahan
+      - name: 🔄 Update Timestamp
+        run: |
+          echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
+          echo "Timestamp updated: $(cat .last_twitch)"
+
+      - name: ✅ Commit & Push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -39,24 +43,24 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Update timestamp
-          echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
-
-          # Pull latest changes instead of rebase
+          # Pull latest changes
           git pull origin master
 
-          # Add specific files (not using -u to avoid unwanted files)
+          # Add specific files
           git add sriwijayatvonline.txt padang_tv.txt .last_twitch
 
-          # Check for actual changes
+          # Verify changes
+          echo "=== Status before commit ==="
+          git status
+          echo "=== Diff to be committed ==="
+          git diff --cached
+
+          # Commit if there are changes
           if ! git diff-index --quiet HEAD --; then
-            # Check which files changed
-            CHANGED_FILES=$(git diff --name-only --cached)
-            echo "Changed files: $CHANGED_FILES"
-            
             git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master
-            echo "✅ Perubahan berhasil di-push"
+            echo "✅ Update successful with timestamp: $(cat .last_twitch)"
           else
-            echo "✅ Tidak ada perubahan pada file yang di-track"
+            echo "⚠️ No changes detected in tracked files"
+            echo "Current timestamp: $(cat .last_twitch)"
           fi
