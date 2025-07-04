@@ -29,38 +29,29 @@ jobs:
       - name: ▶️ Jalankan Python
         run: python pesawatsry.py
 
-      - name: 🔄 Update Timestamp
-        run: |
-          echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
-          echo "Timestamp updated: $(cat .last_twitch)"
-
       - name: ✅ Commit & Push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Configure Git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Pull latest changes
           git pull origin master
 
-          # Add specific files
-          git add sriwijayatvonline.txt padang_tv.txt .last_twitch
+          # Tambahkan hanya file .txt
+          git add sriwijayatvonline.txt padang_tv.txt
 
-          # Verify changes
-          echo "=== Status before commit ==="
-          git status
-          echo "=== Diff to be committed ==="
-          git diff --cached
+          if git diff --cached --quiet; then
+            echo "⚠️ Tidak ada perubahan di file stream"
+          else
+            echo "✅ Detected changes in stream files"
 
-          # Commit if there are changes
-          if ! git diff-index --quiet HEAD --; then
+            # Update timestamp hanya jika ada perubahan
+            echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
+            git add .last_twitch
+
             git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master
-            echo "✅ Update successful with timestamp: $(cat .last_twitch)"
-          else
-            echo "⚠️ No changes detected in tracked files"
-            echo "Current timestamp: $(cat .last_twitch)"
+            echo "✅ Commit berhasil dengan timestamp: $(cat .last_twitch)"
           fi
