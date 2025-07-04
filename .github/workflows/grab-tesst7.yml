@@ -68,4 +68,3 @@ jobs:
             else
               echo "✅ Tidak ada perubahan yang perlu di-commit"
             fi
-          fi
