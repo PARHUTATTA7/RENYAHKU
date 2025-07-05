@@ -1,1 +1,3 @@
-https://cdndirector.dailymotion.com/cdn/live/video/x8qckyq.m3u8?sec=QUBYbwB7sPjb_5GGuno6cANk7ZAMhrxmZ5nIBa_7jL0q-_uUZmL0vkTwF0CibipTk1yoVUsHUbtVgQN3qpZZ7Q&dmTs=763225&dmV1st=8bf23150-d9c2-4467-b951-0967083f233a
+#EXTM3U
+#EXTINF:8.333333,
+https://dl.dropboxusercontent.com/s/2e85fh4c34jxksu/kitabisanew_1080p.ts
