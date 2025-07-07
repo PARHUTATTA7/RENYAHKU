@@ -1,3 +1,1 @@
-#EXTM3U
-#EXTINF:8.333333,
-https://dl.dropboxusercontent.com/s/2e85fh4c34jxksu/kitabisanew_1080p.ts
+https://cdndirector.dailymotion.com/cdn/live/video/x8qckyq.m3u8?sec=ca2YT18TQtaDSroSxgYWP1MynSR-fQNwMk8YASfuY9Ps6e4X_vcrb44SS9EMkSAmK83_qBiao4mmwUkb2ZcVSw&dmTs=621763&dmV1st=293A7B1708E03D308B69281BAC38EBE3
