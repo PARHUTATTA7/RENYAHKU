@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import subprocess
 import requests
 from pathlib import Path
 
@@ -30,13 +31,15 @@ def get_proxies(proxy_url):
 
 def load_cached_proxy():
     if PROXY_CACHE_FILE.exists():
-        with open(PROXY_CACHE_FILE) as f:
-            return f.read().strip()
+        return PROXY_CACHE_FILE.read_text().strip()
     return None
 
 def save_working_proxy(proxy):
-    with open(PROXY_CACHE_FILE, "w") as f:
-        f.write(proxy.strip())
+    PROXY_CACHE_FILE.write_text(proxy.strip())
+
+def write_url_to_file(url):
+    Path(FILE_NAME).write_text(url + "\n")
+    print(f"[✓] URL disimpan ke {FILE_NAME}")
 
 def try_proxy(proxy, dailymotion_url, meta_url_template):
     proxies = {"http": proxy, "https": proxy}
@@ -55,53 +58,54 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
         res = session.get(meta_url, headers=headers, proxies=proxies, timeout=10)
         res.raise_for_status()
         meta = res.json()
-
         qualities = meta.get("qualities", {})
         if not qualities:
             print("[!] Tidak ada kualitas video")
             return False
 
-        # Ambil kualitas tertinggi numerik
-        numeric_qualities = [
-            (int(q), qualities[q][0]["url"])
-            for q in qualities
-            if q.isdigit() and qualities[q]
-        ]
+        # Pilih kualitas terbaik, numerik jika ada
+        numeric = sorted((int(q), q) for q in qualities if q.isdigit())
+        best_key = numeric[-1][1] if numeric else sorted(qualities.keys(), reverse=True)[0]
+        hls_url = qualities[best_key][0]["url"]
 
-        if not numeric_qualities:
-            print("[!] Tidak menemukan kualitas numerik")
-            return False
-
-        best_quality_url = max(numeric_qualities, key=lambda x: x[0])[1]
-        print(f"[✓] Dapat URL kualitas tertinggi: {best_quality_url}")
-
-        with open(FILE_NAME, "w") as f:
-            f.write(best_quality_url + "\n")
-
-        print(f"[✓] Simpan URL ke {FILE_NAME}")
+        print(f"[✓] Dapat URL HLS: {hls_url}")
+        write_url_to_file(hls_url)
         save_working_proxy(proxy)
         return True
 
     except Exception as e:
         print(f"[×] Gagal proxy {proxy}: {e}")
         return False
-        
+
 def fallback_write(fallback_url):
     try:
         print(f"[!] Menggunakan fallback: {fallback_url}")
         res = session.get(fallback_url, timeout=10)
         res.raise_for_status()
-        with open(FILE_NAME, "w") as f:
-            f.write(res.text)
+        Path(FILE_NAME).write_text(res.text)
         print(f"[✓] Fallback disimpan ke {FILE_NAME}")
 
-        # Tambahkan agar file cache tetap ada
         if not PROXY_CACHE_FILE.exists():
             PROXY_CACHE_FILE.write_text("#fallback-used")
-
     except Exception as e:
         print(f"[×] Gagal ambil fallback: {e}")
-        
+
+def yt_dlp_fetch(dailymotion_url):
+    try:
+        print("[•] Coba yt-dlp sebagai fallback terakhir...")
+        result = subprocess.check_output(
+            ["yt-dlp", "-f", "best", "--get-url", dailymotion_url],
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        final_url = result.strip()
+        print(f"[✓] yt-dlp URL: {final_url}")
+        write_url_to_file(final_url)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"[×] yt-dlp gagal: {e.output}")
+        return False
+
 def main():
     if not DAYLIDATA.exists():
         print(f"[!] File {DAYLIDATA} tidak ditemukan.")
@@ -121,7 +125,7 @@ def main():
         print("❌ Ada parameter yang belum lengkap di daylidata.txt")
         return
 
-    # 1. Coba proxy cache dulu
+    # Coba proxy cache dulu
     cached_proxy = load_cached_proxy()
     if cached_proxy:
         print(f"[•] Coba proxy cache terlebih dahulu: {cached_proxy}")
@@ -131,20 +135,20 @@ def main():
         else:
             print("✖️ Proxy cache gagal, lanjut ke daftar proxy")
 
-    # 2. Coba daftar proxy
+    # Coba daftar proxy
     proxies = get_proxies(url_proxy)
-    if not proxies:
-        print("❌ Tidak ada proxy tersedia")
-        fallback_write(FALLBACK_URL)
-        return
-
     for proxy in proxies:
         if try_proxy(proxy, DAILYMOTION_URL, meta_url):
             print("✅ Berhasil ambil m3u8")
             return
 
     print("❌ Semua proxy gagal")
+
+    # Fallback: URL statis
     fallback_write(FALLBACK_URL)
+
+    # Terakhir: yt-dlp
+    yt_dlp_fetch(DAILYMOTION_URL)
 
 if __name__ == "__main__":
     main()
