@@ -22,6 +22,9 @@ jobs:
       - name: 📦 Install Python dependencies
         run: pip install requests
 
+      - name: 📥 Install yt-dlp
+        run: pip install yt-dlp
+
       - name: 🔐 Download daylidata.txt
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} temp_private
