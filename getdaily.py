@@ -55,6 +55,7 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
             "Origin": "https://sevenhub.id"
         }
 
+        # Ambil metadata dari proxy
         res = session.get(meta_url, headers=headers, proxies=proxies, timeout=10)
         res.raise_for_status()
         meta = res.json()
@@ -63,15 +64,27 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
             print("[!] Tidak ada kualitas video")
             return False
 
-        # Pilih kualitas terbaik, numerik jika ada
         numeric = sorted((int(q), q) for q in qualities if q.isdigit())
         best_key = numeric[-1][1] if numeric else sorted(qualities.keys(), reverse=True)[0]
         hls_url = qualities[best_key][0]["url"]
 
-        print(f"[✓] Dapat URL HLS: {hls_url}")
-        write_url_to_file(hls_url)
-        save_working_proxy(proxy)
-        return True
+        # Uji akses langsung ke m3u8 dari lokal (tanpa proxy) dengan header lengkap
+        test_headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://www.dailymotion.com/",
+            "Origin": "https://www.dailymotion.com"
+        }
+
+        print(f"[•] Uji akses langsung ke m3u8: {hls_url}")
+        test_res = session.get(hls_url, headers=test_headers, timeout=10)
+        if test_res.status_code == 200 and "#EXTM3U" in test_res.text:
+            print("[✓] Akses m3u8 berhasil tanpa proxy")
+            write_url_to_file(hls_url)
+            save_working_proxy(proxy)
+            return True
+        else:
+            print(f"[×] Gagal akses m3u8 langsung: {test_res.status_code}")
+            return False
 
     except Exception as e:
         print(f"[×] Gagal proxy {proxy}: {e}")
