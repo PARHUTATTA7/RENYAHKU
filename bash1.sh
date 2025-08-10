@@ -22,9 +22,12 @@ while IFS=" " read -r name url; do
   log "[*] Memproses: $name"
 
   if [[ "$url" == *"playlist?list="* ]]; then
-    yt-dlp --cookies "$COOKIES_FILE" -j --flat-playlist --extractor-args "youtube:player_client=web" --user-agent "$USER_AGENT" "$url" |
+    yt-dlp --no-warnings --cookies "$COOKIES_FILE" -j --flat-playlist \
+      --extractor-args "youtube:player_client=web" \
+      --user-agent "$USER_AGENT" "$url" |
     jq -r '.id' | while read -r vid; do
-      direct_url=$(yt-dlp --cookies "$COOKIES_FILE" -g -f 18 --user-agent "$USER_AGENT" "https://www.youtube.com/watch?v=$vid")
+      direct_url=$(yt-dlp --no-warnings --cookies "$COOKIES_FILE" -g -f 18 \
+        --user-agent "$USER_AGENT" "https://www.youtube.com/watch?v=$vid")
       if [ -z "$direct_url" ]; then
         log "[!] Gagal ambil video dari playlist ($vid)"
         continue
@@ -35,7 +38,8 @@ while IFS=" " read -r name url; do
   elif [[ "$url" == *.m3u8 ]]; then
     log "[i] Lewatkan M3U8: $url"
   else
-    merged_url=$(yt-dlp --cookies "$COOKIES_FILE" -g -f 18 --user-agent "$USER_AGENT" "$url")
+    merged_url=$(yt-dlp --no-warnings --cookies "$COOKIES_FILE" -g -f 18 \
+      --user-agent "$USER_AGENT" "$url")
     if [ -z "$merged_url" ]; then
       log "[!] Gagal ambil URL (itag=18) untuk: $url"
       continue
