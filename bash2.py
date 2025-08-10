@@ -2,7 +2,6 @@
 
 import subprocess
 import datetime
-import os
 from pathlib import Path
 import json
 
@@ -20,12 +19,17 @@ def run_cmd(cmd):
         return ""
 
 def get_yt_dlp_output(url, format_code="best[ext=m3u8]"):
-    return run_cmd([
+    if not url:
+        return ""
+    output = run_cmd([
         "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
         "--user-agent", USER_AGENT, "-g", "-f", format_code, url
-    ]).splitlines()[-1] if url else ""
+    ])
+    lines = output.splitlines()
+    return lines[-1] if lines else ""
 
 def get_video_id(url):
+    # Coba resolve ID langsung
     vid = run_cmd([
         "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
         "--user-agent", USER_AGENT, "--get-id", url
@@ -39,6 +43,8 @@ def get_video_id(url):
         try:
             info = json.loads(data)
             vid = info.get("id", "")
+            if not info.get("is_live", False):
+                print("[i] Channel ditemukan, tapi sedang tidak live.")
         except json.JSONDecodeError:
             vid = ""
     return vid
