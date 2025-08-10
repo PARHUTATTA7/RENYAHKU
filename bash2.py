@@ -4,6 +4,7 @@ import subprocess
 import datetime
 import os
 from pathlib import Path
+import json
 
 REPO_NAME = "RENYAHKU"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
@@ -11,32 +12,36 @@ COOKIES_FILE = str(Path.home() / "cookies.txt")
 URL_FILE = Path.home() / "urls_live.txt"
 WORKDIR = Path(".")
 
-def get_yt_dlp_output(url, format_code="best[ext=m3u8]"):
+def run_cmd(cmd):
     try:
-        result = subprocess.run(
-            ["yt-dlp", "--cookies", COOKIES_FILE, "--user-agent", USER_AGENT, "-g", "-f", format_code, url],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            check=True,
-            encoding="utf-8"
-        )
-        lines = result.stdout.strip().splitlines()
-        return lines[-1] if lines else ""
-    except subprocess.CalledProcessError:
-        return ""
-
-def get_video_id(url):
-    try:
-        result = subprocess.run(
-            ["yt-dlp", "--cookies", COOKIES_FILE, "--get-id", url],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            check=True,
-            encoding="utf-8"
-        )
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True, encoding="utf-8")
         return result.stdout.strip()
     except subprocess.CalledProcessError:
         return ""
+
+def get_yt_dlp_output(url, format_code="best[ext=m3u8]"):
+    return run_cmd([
+        "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
+        "--user-agent", USER_AGENT, "-g", "-f", format_code, url
+    ]).splitlines()[-1] if url else ""
+
+def get_video_id(url):
+    vid = run_cmd([
+        "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
+        "--user-agent", USER_AGENT, "--get-id", url
+    ])
+    if not vid and "/live" in url:
+        # Fallback: paksa ambil ID dari JSON
+        data = run_cmd([
+            "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
+            "--user-agent", USER_AGENT, "--dump-json", "--no-playlist", url
+        ])
+        try:
+            info = json.loads(data)
+            vid = info.get("id", "")
+        except json.JSONDecodeError:
+            vid = ""
+    return vid
 
 def safe_filename(name):
     return "".join(c for c in name if c.isalnum() or c in "_.-")
