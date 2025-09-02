@@ -3,7 +3,7 @@ name: Jalankan Bash1
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */3 * * *'
 
 jobs:
   run_bash1_sh:
