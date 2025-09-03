@@ -29,7 +29,7 @@ jobs:
       - name: Jalankan bash1.sh
         run: |
           chmod +x bash1.sh
-          ./bash1.sh
+          ./grab.sh --min-delay 10 --max-delay 30
 
       - name: Commit dan Push
         env:
