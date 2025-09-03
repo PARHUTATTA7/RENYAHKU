@@ -4,6 +4,7 @@ import subprocess
 import datetime
 from pathlib import Path
 import json
+import argparse
 
 REPO_NAME = "RENYAHKU"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
@@ -13,29 +14,33 @@ WORKDIR = Path(".")
 
 def run_cmd(cmd):
     try:
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True, encoding="utf-8")
+        result = subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            check=True, encoding="utf-8"
+        )
         return result.stdout.strip()
     except subprocess.CalledProcessError:
         return ""
 
-def get_yt_dlp_output(url, format_code="best[ext=m3u8]"):
+def get_yt_dlp_output(url, format_code="best[ext=m3u8]", from_start=True):
     if not url:
         return ""
-    output = run_cmd([
+    cmd = [
         "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
         "--user-agent", USER_AGENT, "-g", "-f", format_code, url
-    ])
+    ]
+    if from_start:
+        cmd.insert(4, "--live-from-start")  # taruh sebelum -g
+    output = run_cmd(cmd)
     lines = output.splitlines()
     return lines[-1] if lines else ""
 
 def get_video_id(url):
-    # Coba resolve ID langsung
     vid = run_cmd([
         "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
         "--user-agent", USER_AGENT, "--get-id", url
     ])
     if not vid and "/live" in url:
-        # Fallback: paksa ambil ID dari JSON
         data = run_cmd([
             "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
             "--user-agent", USER_AGENT, "--dump-json", "--no-playlist", url
@@ -53,6 +58,12 @@ def safe_filename(name):
     return "".join(c for c in name if c.isalnum() or c in "_.-")
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-from-start", action="store_true", help="Jangan gunakan --live-from-start")
+    args = parser.parse_args()
+
+    use_from_start = not args.no_from_start
+
     if not URL_FILE.exists():
         print(f"[!] File {URL_FILE} tidak ditemukan")
         return
@@ -75,11 +86,11 @@ def main():
                 continue
 
             resolved_url = f"https://www.youtube.com/watch?v={video_id}"
-            m3u8_url = get_yt_dlp_output(resolved_url, "best[ext=m3u8]")
+            m3u8_url = get_yt_dlp_output(resolved_url, "best[ext=m3u8]", from_start=use_from_start)
 
             if not m3u8_url:
                 print(f"[!] Gagal ambil URL .m3u8, coba fallback format best")
-                m3u8_url = get_yt_dlp_output(resolved_url, "best")
+                m3u8_url = get_yt_dlp_output(resolved_url, "best", from_start=use_from_start)
 
             if not m3u8_url:
                 print(f"[!] Gagal ambil URL streaming untuk: {resolved_url}")
