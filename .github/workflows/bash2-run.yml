@@ -28,7 +28,7 @@ jobs:
           cp private/urls_live.txt $HOME/urls_live.txt
 
       - name: Jalankan bash2.py
-        run: python3 bash2.py
+        run: python3 bash2.py --no-from-start
 
       - name: Commit dan Push hasil
         env:
