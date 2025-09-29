@@ -36,23 +36,43 @@ def get_yt_dlp_output(url, format_code="best[ext=m3u8]", from_start=True):
     return lines[-1] if lines else ""
 
 def get_video_id(url):
+    # coba cara cepat dulu
     vid = run_cmd([
         "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
-        "--user-agent", USER_AGENT, "--get-id", url
+        "--user-agent", USER_AGENT, "--no-playlist", "--flat-playlist", "--get-id", url
+    ]).strip()
+
+    if vid:
+        return vid
+
+    # fallback dump json
+    data = run_cmd([
+        "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
+        "--user-agent", USER_AGENT, "--no-playlist", "--dump-single-json", url
     ])
-    if not vid and "/live" in url:
-        data = run_cmd([
-            "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
-            "--user-agent", USER_AGENT, "--dump-json", "--no-playlist", url
-        ])
-        try:
-            info = json.loads(data)
-            vid = info.get("id", "")
-            if not info.get("is_live", False):
-                print("[i] Channel ditemukan, tapi sedang tidak live.")
-        except json.JSONDecodeError:
-            vid = ""
-    return vid
+
+    try:
+        info = json.loads(data)
+
+        # langsung ada id (bukan playlist)
+        if "id" in info:
+            return info["id"]
+
+        # kalau berupa playlist entries
+        if "entries" in info:
+            for entry in info["entries"]:
+                if not entry:
+                    continue
+                if entry.get("is_live") or entry.get("live_status") == "is_live":
+                    return entry["id"]
+            # fallback: ambil ID pertama
+            if info["entries"]:
+                return info["entries"][0].get("id", "")
+
+    except json.JSONDecodeError:
+        return ""
+
+    return ""
 
 def safe_filename(name):
     return "".join(c for c in name if c.isalnum() or c in "_.-")
