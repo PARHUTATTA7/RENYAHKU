@@ -61,9 +61,16 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
             print("[!] Tidak ada kualitas video")
             return False
 
-        best = sorted(qualities.keys(), reverse=True)[0]
-        hls_url = qualities[best][0]["url"]
-        print(f"[✓] Dapat URL HLS: {hls_url}")
+        # Cari kualitas numerik tertinggi (misalnya 240, 480, 720, 1080)
+        numeric_qualities = [int(q) for q in qualities.keys() if q.isdigit()]
+        if numeric_qualities:
+            best_quality = str(max(numeric_qualities))
+        else:
+            # fallback kalau tidak ada angka (misalnya "auto")
+            best_quality = sorted(qualities.keys())[-1]
+
+        hls_url = qualities[best_quality][0]["url"]
+        print(f"[✓] Dapat URL HLS kualitas tertinggi ({best_quality}p): {hls_url}")
 
         # Simpan URL ke file TXT
         with open(FILE_NAME, "w") as f:
