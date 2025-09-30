@@ -3,7 +3,7 @@ name: Daily M3U8 Grabber
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 */2 * * *'
 
 jobs:
   DAILY_m3u8:
