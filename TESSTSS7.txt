@@ -1,1 +1,1 @@
-https://www.dailymotion.com/cdn/live/video/x8qckyq.m3u8?sec=7KQHNwfp_Rx2yzlCWCjw280QOP-cE0eBgNl8g0qqH0yeW85HoRqw6hfilkx2N6IXiWjDa_DGixoK6_Mr14RtaA&dmTs=46701&dmV1st=21cf61ba-b6f2-4a3b-8219-cdd1e270a86b
+https://live.eu-north-1b.cf.dmcdn.net/sec2(9S5RRIyqU7BFvOA2cXTV9F24FbwHl8adTsQD8-aqZd8_Yg_CrTASXVU4s_koXHcWsoZ_jYV5RdfQ-U-4fqcnVUZUhpHPCFhZMHCTWwkFOZqz8k3G2HIFjanCjp224203)/dm/3/x8qckyq/s/live-720.m3u8#cell=lcf-eu-north-1b
