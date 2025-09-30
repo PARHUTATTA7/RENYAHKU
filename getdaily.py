@@ -38,6 +38,35 @@ def save_working_proxy(proxy):
     with open(PROXY_CACHE_FILE, "w") as f:
         f.write(proxy.strip())
 
+def parse_master_playlist(url, headers, proxies):
+    """Ambil resolusi tertinggi dari master .m3u8"""
+    try:
+        res = session.get(url, headers=headers, proxies=proxies, timeout=10)
+        res.raise_for_status()
+        lines = res.text.splitlines()
+
+        best_url = None
+        best_res = 0
+        for i, line in enumerate(lines):
+            if line.startswith("#EXT-X-STREAM-INF"):
+                # Cari resolusi
+                parts = line.split("RESOLUTION=")
+                if len(parts) > 1:
+                    res_val = parts[1].split(",")[0]
+                    try:
+                        w, h = map(int, res_val.split("x"))
+                        if h > best_res:
+                            best_res = h
+                            best_url = lines[i+1]  # baris setelah EXT-X
+                    except:
+                        pass
+
+        if best_url:
+            return best_url, best_res
+    except Exception as e:
+        print(f"[!] Gagal parse master playlist: {e}")
+    return None, 0
+
 def try_proxy(proxy, dailymotion_url, meta_url_template):
     proxies = {"http": proxy, "https": proxy}
     try:
@@ -61,16 +90,23 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
             print("[!] Tidak ada kualitas video")
             return False
 
-        # Cari kualitas numerik tertinggi (misalnya 240, 480, 720, 1080)
+        # Cari kualitas numerik tertinggi
         numeric_qualities = [int(q) for q in qualities.keys() if q.isdigit()]
         if numeric_qualities:
             best_quality = str(max(numeric_qualities))
         else:
-            # fallback kalau tidak ada angka (misalnya "auto")
-            best_quality = sorted(qualities.keys())[-1]
+            # fallback kalau hanya ada "auto"
+            best_quality = list(qualities.keys())[0]
 
         hls_url = qualities[best_quality][0]["url"]
-        print(f"[✓] Dapat URL HLS kualitas tertinggi ({best_quality}p): {hls_url}")
+        print(f"[✓] URL HLS dari API ({best_quality}p): {hls_url}")
+
+        # Kalau masih master .m3u8 → parse untuk ambil variant terbaik
+        if hls_url.endswith(".m3u8"):
+            best_variant, best_res = parse_master_playlist(hls_url, headers, proxies)
+            if best_variant:
+                hls_url = best_variant
+                print(f"[✓] Dapat variant kualitas tertinggi ({best_res}p): {hls_url}")
 
         # Simpan URL ke file TXT
         with open(FILE_NAME, "w") as f:
@@ -83,7 +119,7 @@ def try_proxy(proxy, dailymotion_url, meta_url_template):
     except Exception as e:
         print(f"[×] Gagal proxy {proxy}: {e}")
         return False
-        
+
 def fallback_write(fallback_url):
     try:
         print(f"[!] Menggunakan fallback: {fallback_url}")
@@ -93,13 +129,12 @@ def fallback_write(fallback_url):
             f.write(res.text)
         print(f"[✓] Fallback disimpan ke {FILE_NAME}")
 
-        # Tambahkan agar file cache tetap ada
         if not PROXY_CACHE_FILE.exists():
             PROXY_CACHE_FILE.write_text("#fallback-used")
 
     except Exception as e:
         print(f"[×] Gagal ambil fallback: {e}")
-        
+
 def main():
     if not DAYLIDATA.exists():
         print(f"[!] File {DAYLIDATA} tidak ditemukan.")
@@ -119,7 +154,6 @@ def main():
         print("❌ Ada parameter yang belum lengkap di daylidata.txt")
         return
 
-    # 1. Coba proxy cache dulu
     cached_proxy = load_cached_proxy()
     if cached_proxy:
         print(f"[•] Coba proxy cache terlebih dahulu: {cached_proxy}")
@@ -129,7 +163,6 @@ def main():
         else:
             print("✖️ Proxy cache gagal, lanjut ke daftar proxy")
 
-    # 2. Coba daftar proxy
     proxies = get_proxies(url_proxy)
     if not proxies:
         print("❌ Tidak ada proxy tersedia")
