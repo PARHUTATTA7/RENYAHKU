@@ -1,4 +1,4 @@
-name: Pesawat M3U8 Grabber
+name: Pesawat M3U8 Grabber 
 
 on:
   workflow_dispatch:
@@ -29,6 +29,21 @@ jobs:
       - name: ▶️ Jalankan Python
         run: python pesawatsry.py
 
+      - name: 🛠️ Fallback jika sriwijayatvonline.txt kosong
+        id: fallback
+        run: |
+          FILE="sriwijayatvonline.txt"
+          FALLBACK_URL="https://sriwijayatv.siar.us/live/sriwijayatv.m3u8"
+
+          if [ ! -s "$FILE" ]; then
+            echo "⚠️ $FILE kosong, menambahkan fallback URL..."
+            echo "$FALLBACK_URL" > "$FILE"
+            echo "fallback_used=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ $FILE berisi data, tidak perlu fallback"
+            echo "fallback_used=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: ✅ Commit & Push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,7 +54,6 @@ jobs:
 
           git pull origin master
 
-          # Tambahkan hanya file .txt
           git add sriwijayatvonline.txt padang_tv.txt
 
           if git diff --cached --quiet; then
@@ -47,11 +61,17 @@ jobs:
           else
             echo "✅ Detected changes in stream files"
 
-            # Update timestamp hanya jika ada perubahan
             echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_twitch
             git add .last_twitch
 
-            git commit -m "Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')"
+            # Tambahkan info fallback di pesan commit kalau aktif
+            if [ "${{ steps.fallback.outputs.fallback_used }}" = "true" ]; then
+              COMMIT_MSG="Update Twitch M3U8 + Fallback SriwijayaTV - $(date '+%Y-%m-%d %H:%M:%S')"
+            else
+              COMMIT_MSG="Update Twitch M3U8 - $(date '+%Y-%m-%d %H:%M:%S')"
+            fi
+
+            git commit -m "$COMMIT_MSG"
             git push origin master
-            echo "✅ Commit berhasil dengan timestamp: $(cat .last_twitch)"
+            echo "✅ Commit berhasil dengan pesan: $COMMIT_MSG"
           fi
