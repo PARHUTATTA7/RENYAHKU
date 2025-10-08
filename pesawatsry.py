@@ -28,16 +28,24 @@ def main():
     for channel in channels:
         print(f"🔄 Memproses channel: {channel}")
         m3u8_url = get_twitch_m3u8_url(channel)
+        output_file = Path(f"{channel}.txt")
+
         if m3u8_url:
             try:
-                output_file = Path(f"{channel}.txt")
                 with open(output_file, "w") as f_out:
                     f_out.write(m3u8_url + "\n")
                 print(f"✅ Disimpan ke {output_file}")
             except Exception as e:
                 print(f"❌ Gagal menulis file {channel}.txt: {e}")
         else:
-            print(f"⚠️ Tidak ada URL untuk {channel}")
+            # Buat file kosong untuk memastikan fallback bisa bekerja
+            try:
+                output_file.touch(exist_ok=True)
+                # Pastikan benar-benar kosong
+                open(output_file, "w").close()
+                print(f"⚠️ Tidak ada URL untuk {channel} → File kosong dibuat: {output_file}")
+            except Exception as e:
+                print(f"❌ Gagal membuat file kosong {channel}.txt: {e}")
 
 if __name__ == "__main__":
     main()
