@@ -15,11 +15,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 📄 Ambil page_url.txt dari Repo Privat
+      - name: 📄 Ambil page_url.txt dari Repo Privat Input
+        env:
+          TOKEN_PRIVATE: ${{ secrets.TOKEN_PRIVATE }}
+          REPO_PRIVATE_INPUT: ${{ secrets.REPO_PRIVATE_INPUT }}
         run: |
-          git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
+          git clone --depth=1 https://x-access-token:${TOKEN_PRIVATE}@github.com/${REPO_PRIVATE_INPUT}.git private
           cp private/page_url.txt $HOME/page_url.txt
-          rm -rf private  # Clean up segera
+          rm -rf private
+          echo "✅ page_url.txt berhasil diambil dari repo privat input"
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -32,32 +36,29 @@ jobs:
       - name: ▶️ Jalankan Skrip Ekstraksi
         run: python ekstrak.py
 
-      - name: ✅ Commit & Push ke Repo Privat
+      - name: ✅ Commit & Push ke Repo Privat Output
         env:
           TOKEN_PRIVATE: ${{ secrets.TOKEN_PRIVATE }}
-          REPO_PRIVATE: ${{ secrets.REPO_PRIVATE2 }}
+          REPO_PRIVATE_OUTPUT: ${{ secrets.REPO_PRIVATE_OUTPUT }}
         run: |
-          # Konfigurasi Git global
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Clone repo privat pakai token personal (bukan GITHUB_TOKEN)
-          git clone --depth=1 https://x-access-token:${TOKEN_PRIVATE}@github.com/${REPO_PRIVATE2}.git repo-priv
+          # Clone repo output privat
+          git clone --depth=1 https://x-access-token:${TOKEN_PRIVATE}@github.com/${REPO_PRIVATE_OUTPUT}.git repo-priv
           cd repo-priv
 
-          # Update file hasil dari workflow (salin dari workspace utama)
+          # Salin file hasil dari workspace utama
           cp ../jajan_kuekue.json ./
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_ekstrak
 
-          # Add file yang diinginkan
           git add .last_ekstrak jajan_kuekue.json
 
-          # Cek apakah ada perubahan
           if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan yang perlu di-commit"
           else
             git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')"
             git pull --rebase origin master || true
             git push origin master
-            echo "🚀 Berhasil push ke repo privat: ${REPO_PRIVATE}"
+            echo "🚀 Berhasil push ke repo privat output"
           fi
