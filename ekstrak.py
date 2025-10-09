@@ -1,4 +1,3 @@
-import requests
 import re
 import json
 from html import unescape
@@ -15,11 +14,11 @@ URL_FILE = Path.home() / "page_url.txt"
 with open(URL_FILE, encoding="utf-8") as f:
     page_url = f.read().strip()
 
-# 🧩 Buat base domain (untuk Referer & Origin otomatis)
+# 🧩 Base domain otomatis
 parsed = urlparse(page_url)
 base_domain = f"{parsed.scheme}://{parsed.netloc}"
 
-# 🧠 Header dinamis — tanpa hardcode referer/origin
+# 🧠 Header umum
 base_headers = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -28,38 +27,27 @@ base_headers = {
     ),
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
-    "Referer": base_domain + "/",   # otomatis sesuai domain
+    "Referer": base_domain + "/",
     "Origin": base_domain,
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "same-origin",
 }
 
+# 🌩️ Scraper Cloudflare
+scraper = cloudscraper.create_scraper()
+
 def fetch_html(url, referer=None):
-    """Ambil HTML dari URL dengan headers dinamis dan fallback Cloudflare bypass"""
+    """Ambil HTML menggunakan CloudScraper saja"""
     headers = base_headers.copy()
     if referer:
         headers["Referer"] = referer
         parsed_ref = urlparse(referer)
         headers["Origin"] = f"{parsed_ref.scheme}://{parsed_ref.netloc}"
-
     try:
-        resp = requests.get(url, headers=headers, verify=False, timeout=20)
-        resp.raise_for_status()
-        return resp.text
-    except requests.exceptions.HTTPError as e:
-        if resp.status_code == 403:
-            print("⚠️ 403 Forbidden — trying with cloudscraper bypass...")
-            scraper = cloudscraper.create_scraper()
-            resp2 = scraper.get(url, headers=headers, timeout=20)
-            if resp2.status_code == 200:
-                print("✅ Bypass successful via CloudScraper")
-                return resp2.text
-            else:
-                print(f"❌ CloudScraper failed: {resp2.status_code}")
-                return ""
+        print(f"🌐 Fetching: {url}")
+        resp = scraper.get(url, headers=headers, timeout=20)
+        if resp.status_code == 200:
+            return resp.text
         else:
-            print(f"❌ HTTP error: {e}")
+            print(f"❌ Request gagal: {resp.status_code}")
             return ""
     except Exception as e:
         print(f"❌ Request error: {e}")
@@ -67,14 +55,16 @@ def fetch_html(url, referer=None):
 
 
 def extract_jwp_sources(html):
-    """Cari blok jwpSources"""
+    """Cari blok jwpSources dari halaman"""
     match = re.search(r'jwpSources\s*=\s*(\[[\s\S]*?\])\s*,\s*\n\s*drmToken', html)
     if not match:
         return None
+
     raw_json = match.group(1)
     raw_json = raw_json.encode("utf-8").decode("unicode_escape")
     raw_json = raw_json.replace("\\/", "/")
     raw_json = unescape(raw_json)
+
     try:
         return json.loads(raw_json)
     except json.JSONDecodeError as e:
@@ -85,7 +75,7 @@ def extract_jwp_sources(html):
 
 
 def extract_iframe_src(html, base_url):
-    """Cari URL iframe di dalam HTML"""
+    """Cari URL iframe di halaman"""
     iframe = re.search(r'<iframe[^>]+src=["\']([^"\']+)["\']', html)
     if iframe:
         return urljoin(base_url, iframe.group(1))
@@ -97,12 +87,13 @@ def extract_iframe_src(html, base_url):
 # ========================
 html = fetch_html(page_url)
 if not html:
+    print("❌ Tidak bisa ambil HTML utama.")
     exit()
 
 sources = extract_jwp_sources(html)
 
 # ========================
-# 2️⃣ Jika tidak ada, coba iframe
+# 2️⃣ Coba iframe jika kosong
 # ========================
 if not sources:
     iframe_url = extract_iframe_src(html, page_url)
