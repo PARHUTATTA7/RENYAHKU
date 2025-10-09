@@ -3,7 +3,7 @@ name: Ekstrak jwpSources
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 * * * *'  # setiap jam
 
 jobs:
   ekstrak_jwpSources:
@@ -19,7 +19,7 @@ jobs:
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/page_url.txt $HOME/page_url.txt
-          rm -rf private  # Clean up immediately after use
+          rm -rf private  # Clean up segera
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -32,31 +32,32 @@ jobs:
       - name: ▶️ Jalankan Skrip Ekstraksi
         run: python ekstrak.py
 
-      - name: ✅ Commit & Push Perubahan
+      - name: ✅ Commit & Push ke Repo Privat
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOKEN_PRIVATE: ${{ secrets.TOKEN_PRIVATE }}
+          REPO_PRIVATE: ${{ secrets.REPO_PRIVATE }}
         run: |
-          # Configure Git
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          # Konfigurasi Git global
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Update timestamp file
+          # Clone repo privat pakai token personal (bukan GITHUB_TOKEN)
+          git clone --depth=1 https://x-access-token:${TOKEN_PRIVATE}@github.com/${REPO_PRIVATE}.git repo-priv
+          cd repo-priv
+
+          # Update file hasil dari workflow (salin dari workspace utama)
+          cp ../jajan_kuekue.json ./
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_ekstrak
 
-          # Clean up any remaining private directory
-          if [ -d "private" ]; then
-            git clean -fd private  # Force remove directory
-          fi
-
-          # Add only the files we want to track
+          # Add file yang diinginkan
           git add .last_ekstrak jajan_kuekue.json
 
-          # Check if there are changes to commit
-          if git diff-index --quiet HEAD --; then
+          # Cek apakah ada perubahan
+          if git diff --cached --quiet; then
             echo "✅ Tidak ada perubahan yang perlu di-commit"
           else
             git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')"
-            git pull --rebase origin master  # Rebase before push
+            git pull --rebase origin master || true
             git push origin master
+            echo "🚀 Berhasil push ke repo privat: ${REPO_PRIVATE}"
           fi
