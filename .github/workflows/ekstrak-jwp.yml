@@ -48,17 +48,33 @@ jobs:
           git clone --depth=1 https://x-access-token:${TOKEN_PRIVATE}@github.com/${REPO_PRIVATE_OUTPUT}.git repo-priv
           cd repo-priv
 
-          # Salin file hasil dari workspace utama
+          # Salin hanya file hasil (tanpa .last_ekstrak)
           cp ../jajan_kuekue.json ./
-          echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_ekstrak
 
-          git add .last_ekstrak jajan_kuekue.json
-
+          git add jajan_kuekue.json
           if git diff --cached --quiet; then
-            echo "✅ Tidak ada perubahan yang perlu di-commit"
+            echo "✅ Tidak ada perubahan di jajan_kuekue.json"
           else
             git commit -m "Update jajan_kuekue.json - $(date '+%Y-%m-%d %H:%M:%S')"
             git pull --rebase origin master || true
             git push origin master
             echo "🚀 Berhasil push ke repo privat output"
           fi
+
+      - name: 🕓 Commit timestamp ke repo publik
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_ekstrak
+          git add .last_ekstrak
+
+          if git diff --cached --quiet; then
+            echo "✅ Tidak ada perubahan timestamp"
+          else
+            git commit -m "Update .last_ekstrak - $(date '+%Y-%m-%d %H:%M:%S')"
+            git pull --rebase origin master || true
+            git push origin master
+            echo "🕓 Timestamp .last_ekstrak berhasil disimpan ke repo publik"
+          fi
+
