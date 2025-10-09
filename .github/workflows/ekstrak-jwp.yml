@@ -27,7 +27,7 @@ jobs:
           python-version: 3.11
 
       - name: 📦 Install dependencies
-        run: pip install requests
+        run: pip install requests cloudscraper beautifulsoup4
 
       - name: ▶️ Jalankan Skrip Ekstraksi
         run: python ekstrak.py
