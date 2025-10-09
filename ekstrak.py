@@ -5,6 +5,7 @@ from html import unescape
 from pathlib import Path
 import urllib3
 from urllib.parse import urljoin, urlparse
+import cloudscraper
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -35,19 +36,35 @@ base_headers = {
 }
 
 def fetch_html(url, referer=None):
-    """Ambil HTML dari URL dengan headers dinamis"""
+    """Ambil HTML dari URL dengan headers dinamis dan fallback Cloudflare bypass"""
     headers = base_headers.copy()
     if referer:
         headers["Referer"] = referer
         parsed_ref = urlparse(referer)
         headers["Origin"] = f"{parsed_ref.scheme}://{parsed_ref.netloc}"
+
     try:
         resp = requests.get(url, headers=headers, verify=False, timeout=20)
         resp.raise_for_status()
         return resp.text
+    except requests.exceptions.HTTPError as e:
+        if resp.status_code == 403:
+            print("⚠️ 403 Forbidden — trying with cloudscraper bypass...")
+            scraper = cloudscraper.create_scraper()
+            resp2 = scraper.get(url, headers=headers, timeout=20)
+            if resp2.status_code == 200:
+                print("✅ Bypass successful via CloudScraper")
+                return resp2.text
+            else:
+                print(f"❌ CloudScraper failed: {resp2.status_code}")
+                return ""
+        else:
+            print(f"❌ HTTP error: {e}")
+            return ""
     except Exception as e:
         print(f"❌ Request error: {e}")
         return ""
+
 
 def extract_jwp_sources(html):
     """Cari blok jwpSources"""
@@ -65,6 +82,7 @@ def extract_jwp_sources(html):
         Path("raw_jwpSources.txt").write_text(raw_json, encoding="utf-8")
         print("🔍 Saved raw JSON to raw_jwpSources.txt for debugging")
         return None
+
 
 def extract_iframe_src(html, base_url):
     """Cari URL iframe di dalam HTML"""
