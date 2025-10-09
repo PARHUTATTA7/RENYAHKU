@@ -35,14 +35,14 @@ jobs:
       - name: ✅ Commit & Push ke Repo Privat
         env:
           TOKEN_PRIVATE: ${{ secrets.TOKEN_PRIVATE }}
-          REPO_PRIVATE: ${{ secrets.REPO_PRIVATE }}
+          REPO_PRIVATE: ${{ secrets.REPO_PRIVATE2 }}
         run: |
           # Konfigurasi Git global
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           # Clone repo privat pakai token personal (bukan GITHUB_TOKEN)
-          git clone --depth=1 https://x-access-token:${TOKEN_PRIVATE}@github.com/${REPO_PRIVATE}.git repo-priv
+          git clone --depth=1 https://x-access-token:${TOKEN_PRIVATE}@github.com/${REPO_PRIVATE2}.git repo-priv
           cd repo-priv
 
           # Update file hasil dari workflow (salin dari workspace utama)
