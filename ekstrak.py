@@ -4,7 +4,7 @@ import json
 from html import unescape
 from pathlib import Path
 import urllib3
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -14,16 +14,33 @@ URL_FILE = Path.home() / "page_url.txt"
 with open(URL_FILE, encoding="utf-8") as f:
     page_url = f.read().strip()
 
-headers = {
+# 🧩 Buat base domain (untuk Referer & Origin otomatis)
+parsed = urlparse(page_url)
+base_domain = f"{parsed.scheme}://{parsed.netloc}"
+
+# 🧠 Header dinamis — tanpa hardcode referer/origin
+base_headers = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/120.0.0.0 Safari/537.36"
-    )
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": base_domain + "/",   # otomatis sesuai domain
+    "Origin": base_domain,
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
 }
 
-def fetch_html(url):
-    """Ambil HTML dari URL"""
+def fetch_html(url, referer=None):
+    """Ambil HTML dari URL dengan headers dinamis"""
+    headers = base_headers.copy()
+    if referer:
+        headers["Referer"] = referer
+        parsed_ref = urlparse(referer)
+        headers["Origin"] = f"{parsed_ref.scheme}://{parsed_ref.netloc}"
     try:
         resp = requests.get(url, headers=headers, verify=False, timeout=20)
         resp.raise_for_status()
@@ -49,7 +66,6 @@ def extract_jwp_sources(html):
         print("🔍 Saved raw JSON to raw_jwpSources.txt for debugging")
         return None
 
-
 def extract_iframe_src(html, base_url):
     """Cari URL iframe di dalam HTML"""
     iframe = re.search(r'<iframe[^>]+src=["\']([^"\']+)["\']', html)
@@ -74,7 +90,7 @@ if not sources:
     iframe_url = extract_iframe_src(html, page_url)
     if iframe_url:
         print(f"🔗 Found iframe: {iframe_url}")
-        iframe_html = fetch_html(iframe_url)
+        iframe_html = fetch_html(iframe_url, referer=page_url)
         sources = extract_jwp_sources(iframe_html)
         if not sources:
             print("❌ jwpSources not found in iframe.")
