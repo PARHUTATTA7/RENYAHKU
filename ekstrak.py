@@ -137,4 +137,3 @@ else:
     out_file.write_text(json.dumps(output_data, indent=2), encoding="utf-8")
 
     print(f"✅ Widevine license data saved → {out_file}")
-    print(json.dumps(output_data, indent=2))
