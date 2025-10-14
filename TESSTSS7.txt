@@ -1,1 +1,3 @@
-https://live.eu-north-1a.cf.dmcdn.net/sec2(WzvhXeLRLpJ0ZxFkqPxILkMm4378w-VhlJ3sNN9dF0TB-KhKzQPzbtBQDQsUfxbs0gLb86gYUttb7GUvaNespl5VNRP5FZwwV5qG7AquSqOnN_mjU1RshHOPQClQCCbY)/dm/3/x8qckyq/s/live-720.m3u8#cell=lcf-eu-north-1a
+#EXTM3U
+#EXTINF:8.333333,
+https://dl.dropboxusercontent.com/s/2e85fh4c34jxksu/kitabisanew_1080p.ts
