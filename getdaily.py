@@ -4,8 +4,9 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 import re
 
-# Lokasi file konfigurasi
+# Lokasi file konfigurasi & cache
 DAYLIDATA = Path.home() / "daylidata.txt"
+PROXY_CACHE_FILE = Path("proxy_ok.txt")
 session = requests.Session()
 
 
@@ -30,6 +31,26 @@ def load_multi_config(path):
     except Exception as e:
         print(f"[!] Gagal membaca file konfigurasi: {e}")
         return []
+
+
+def get_proxies(proxy_url):
+    try:
+        res = requests.get(proxy_url, timeout=10)
+        res.raise_for_status()
+        return res.text.strip().splitlines()
+    except Exception as e:
+        print(f"[!] Gagal ambil proxy list: {e}")
+        return []
+
+
+def load_cached_proxy():
+    if PROXY_CACHE_FILE.exists():
+        return PROXY_CACHE_FILE.read_text().strip()
+    return None
+
+
+def save_working_proxy(proxy):
+    PROXY_CACHE_FILE.write_text(proxy.strip())
 
 
 def build_m3u8_headers(m3u8_url):
@@ -63,10 +84,9 @@ def build_m3u8_headers(m3u8_url):
     }
 
 
-def parse_master_playlist(m3u8_url):
-    """Cari variant kualitas tertinggi dari master.m3u8"""
+def parse_master_playlist(m3u8_url, proxies):
     headers = build_m3u8_headers(m3u8_url)
-    res = session.get(m3u8_url, headers=headers, timeout=10)
+    res = session.get(m3u8_url, headers=headers, proxies=proxies, timeout=10)
     res.raise_for_status()
 
     lines = res.text.splitlines()
@@ -84,33 +104,29 @@ def parse_master_playlist(m3u8_url):
     return best_url, best_res
 
 
-def fetch_dailymotion_url(dailymotion_url, meta_url_template, output_file, fallback_url):
+def try_proxy(proxy, dailymotion_url, meta_url_template, output_file):
+    proxies = {"http": proxy, "https": proxy}
     try:
+        print(f"[•] Coba proxy: {proxy}")
         video_id = dailymotion_url.split('/video/')[1].split('_')[0]
         meta_url = meta_url_template.format(video_id=video_id)
 
-        print(f"🎬 Ambil metadata untuk ID: {video_id}")
-        headers = {
-            "User-Agent": "Mozilla/5.0",
-            "Referer": "https://sevenhub.id/",
-            "Origin": "https://sevenhub.id",
-        }
-
-        res = session.get(meta_url, headers=headers, timeout=10)
+        headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://sevenhub.id/", "Origin": "https://sevenhub.id"}
+        res = session.get(meta_url, headers=headers, proxies=proxies, timeout=10)
         res.raise_for_status()
+
         meta = res.json()
         qualities = meta.get("qualities", {})
-
         if not qualities:
-            print("[!] Tidak ada kualitas video di metadata")
+            print("[!] Tidak ada kualitas video")
             return False
 
         if "auto" in qualities:
             hls_master_url = qualities["auto"][0]["url"]
             print(f"[✓] Master playlist: {hls_master_url}")
-            best_variant_url, best_res = parse_master_playlist(hls_master_url)
+            best_variant_url, best_res = parse_master_playlist(hls_master_url, proxies)
             final_url = best_variant_url or hls_master_url
-            print(f"[✓] Final URL ({best_res}p): {final_url}")
+            print(f"[✓] Final: {final_url}")
         else:
             numeric_qualities = [int(q) for q in qualities.keys() if q.isdigit()]
             if numeric_qualities:
@@ -120,45 +136,51 @@ def fetch_dailymotion_url(dailymotion_url, meta_url_template, output_file, fallb
                 key_some = list(qualities.keys())[0]
                 final_url = qualities[key_some][0]["url"]
 
-        Path(output_file).write_text(final_url + "\n", encoding="utf-8")
-        print(f"[✅] Simpan hasil ke {output_file}")
+        Path(output_file).write_text(final_url + "\n")
+        print(f"[✓] Simpan ke {output_file}")
+        save_working_proxy(proxy)
         return True
-
     except Exception as e:
-        print(f"[×] Gagal ambil data utama: {e}")
-        if fallback_url:
-            try:
-                print(f"[!] Gunakan fallback: {fallback_url}")
-                r = session.get(fallback_url, timeout=10)
-                r.raise_for_status()
-                Path(output_file).write_text(r.text, encoding="utf-8")
-                print(f"[✅] Fallback tersimpan ke {output_file}")
-                return True
-            except Exception as ef:
-                print(f"[×] Gagal fallback juga: {ef}")
+        print(f"[×] Proxy gagal {proxy}: {e}")
         return False
+
+
+def fallback_write(fallback_url, output_file):
+    try:
+        print(f"[!] Fallback: {fallback_url}")
+        res = session.get(fallback_url, timeout=10)
+        res.raise_for_status()
+        Path(output_file).write_text(res.text)
+        print(f"[✓] Fallback disimpan ke {output_file}")
+    except Exception as e:
+        print(f"[×] Gagal fallback: {e}")
 
 
 def process_video(cfg):
     DAILYMOTION_URL = cfg.get("DAILYMOTION_URL")
     FALLBACK_URL = cfg.get("FALLBACK_URL")
+    url_proxy = cfg.get("url_proxy")
     meta_url = cfg.get("meta_url")
-    OUTPUT_FILE = cfg.get("OUTPUT_FILE")
+    OUTPUT_FILE = cfg.get("OUTPUT_FILE", "output.txt")
 
-    if not all([DAILYMOTION_URL, FALLBACK_URL, meta_url]):
-        print("❌ Konfigurasi tidak lengkap. Lewati blok ini.")
+    if not all([DAILYMOTION_URL, FALLBACK_URL, url_proxy, meta_url]):
+        print("❌ Konfigurasi tidak lengkap, lewati blok ini.")
         return
 
-    if not OUTPUT_FILE:
-        video_id = DAILYMOTION_URL.split('/video/')[1].split('_')[0]
-        OUTPUT_FILE = f"{video_id}.txt"
+    print(f"\n🎬 Proses video: {DAILYMOTION_URL}")
+    cached_proxy = load_cached_proxy()
+    if cached_proxy and try_proxy(cached_proxy, DAILYMOTION_URL, meta_url, OUTPUT_FILE):
+        print("✅ Berhasil dengan proxy cache")
+        return
 
-    print(f"\n▶️ Proses: {DAILYMOTION_URL}")
-    success = fetch_dailymotion_url(DAILYMOTION_URL, meta_url, OUTPUT_FILE, FALLBACK_URL)
-    if not success:
-        print(f"[×] Gagal ambil M3U8 untuk {DAILYMOTION_URL}")
-    else:
-        print(f"[✓] Selesai untuk {OUTPUT_FILE}")
+    proxies = get_proxies(url_proxy)
+    for proxy in proxies:
+        if try_proxy(proxy, DAILYMOTION_URL, meta_url, OUTPUT_FILE):
+            print("✅ Berhasil ambil m3u8")
+            return
+
+    print("❌ Semua proxy gagal, fallback...")
+    fallback_write(FALLBACK_URL, OUTPUT_FILE)
 
 
 def main():
