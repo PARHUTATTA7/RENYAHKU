@@ -3,20 +3,21 @@ name: Daily M3U8 Grabber
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 */2 * * *' # jalan tiap 2 jam
 
 jobs:
   DAILY_m3u8:
     runs-on: ubuntu-latest
+
     steps:
       - name: ⬇️ Checkout Repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ⚙️ Setup Python 
+      - name: ⚙️ Setup Python
         run: |
-          sudo apt update
+          sudo apt update -y
           pip install requests
 
       - name: 📄 Ambil daylidata.txt dari Repo Privat
@@ -25,32 +26,32 @@ jobs:
           cp private/daylidata.txt $HOME/daylidata.txt
           rm -rf private
 
-      - name: ▶️ Jalankan Python
-        run: python getdaily.py
+      - name: ▶️ Jalankan Python Grabber
+        run: |
+          python getdaily.py
 
-      - name: ✅ Commit & Push
+      - name: ✅ Commit & Push hasil
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          
+          # Pastikan branch utama sinkron
+          git pull origin master || git pull origin main || true
 
-          git pull origin master
-
-          # Tambahkan hanya file .txt
-          git add TESSTSS7.txt
+          # Tambahkan semua file hasil (*.txt)
+          git add *.txt || true
 
           if git diff --cached --quiet; then
-            echo "⚠️ Tidak ada perubahan di file stream"
+            echo "⚠️ Tidak ada perubahan file M3U8"
           else
-            echo "✅ Detected changes in stream files"
+            TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+            echo "Run at: ${TIMESTAMP}" > .last_run_daily
+            git add .last_run_daily
 
-            # Update timestamp hanya jika ada perubahan
-            echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_tesst7
-            git add .last_tesst7
-
-            git commit -m "Update TESSTSS7 M3U8 - $(date '+%Y-%m-%d %H:%M:%S')"
-            git push origin master
-            echo "✅ Commit berhasil dengan timestamp: $(cat .last_tesst7)"
+            git commit -m "🆕 Update M3U8 hasil Dailymotion - ${TIMESTAMP}"
+            git push origin HEAD:master || git push origin HEAD:main
+            echo "✅ Commit berhasil pada ${TIMESTAMP}"
           fi
