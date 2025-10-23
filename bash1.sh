@@ -44,13 +44,11 @@ if [ ! -f "$URL_FILE" ]; then
   exit 1
 fi
 
-# fungsi sleep random biar gak ke-limit
 sleep_random() {
   if [ "$NO_DELAY" = true ]; then
     log "[~] Mode no-delay aktif, skip sleep"
     return
   fi
-
   if [ "$MAX_DELAY" -lt "$MIN_DELAY" ]; then
     log "[!] max-delay ($MAX_DELAY) lebih kecil dari min-delay ($MIN_DELAY), gunakan default 5–15"
     MIN_DELAY=5
@@ -60,6 +58,9 @@ sleep_random() {
   log "[~] Tidur $delay detik untuk hindari rate-limit"
   sleep $delay
 }
+
+# ✅ Format progressive max 720p
+FORMAT_STR="best[acodec!=none][vcodec!=none][ext=mp4][height<=720]/best[acodec!=none][vcodec!=none][height<=720]"
 
 while IFS=" " read -r name url; do
   [[ -z "$name" || "$name" == \#* ]] && continue
@@ -72,26 +73,32 @@ while IFS=" " read -r name url; do
       --user-agent "$USER_AGENT" "$url" |
     jq -r '.id' | while read -r vid; do
       sleep_random
-      direct_url=$(yt-dlp --no-warnings --cookies "$COOKIES_FILE" -g -f 18 \
-        --user-agent "$USER_AGENT" "https://www.youtube.com/watch?v=$vid")
+      direct_url=$(yt-dlp --no-warnings --cookies "$COOKIES_FILE" \
+        --extractor-args "youtube:player_client=android" \
+        --user-agent "$USER_AGENT" \
+        -g -f "$FORMAT_STR" "https://www.youtube.com/watch?v=$vid")
       if [ -z "$direct_url" ]; then
         log "[!] Gagal ambil video dari playlist ($vid)"
         continue
       fi
       echo "$direct_url" > "$OUTPUT_DIR/${safe_name}_$vid.txt"
-      log "[✓] URL dari playlist ($vid) disimpan: ${safe_name}_$vid.txt"
+      log "[✓] URL 720p ($vid) disimpan: ${safe_name}_$vid.txt"
     done
+
   elif [[ "$url" == *.m3u8 ]]; then
     log "[i] Lewatkan M3U8: $url"
+
   else
     sleep_random
-    merged_url=$(yt-dlp --no-warnings --cookies "$COOKIES_FILE" -g -f 18 \
-      --user-agent "$USER_AGENT" "$url")
+    merged_url=$(yt-dlp --no-warnings --cookies "$COOKIES_FILE" \
+      --extractor-args "youtube:player_client=android" \
+      --user-agent "$USER_AGENT" \
+      -g -f "$FORMAT_STR" "$url")
     if [ -z "$merged_url" ]; then
-      log "[!] Gagal ambil URL (itag=18) untuk: $url"
+      log "[!] Tidak ada progressive ≤720p untuk: $url"
       continue
     fi
     echo "$merged_url" > "$OUTPUT_DIR/${safe_name}.txt"
-    log "[✓] URL (itag=18) disimpan: ${safe_name}.txt"
+    log "[✓] URL 720p disimpan: ${safe_name}.txt"
   fi
 done < "$URL_FILE"
