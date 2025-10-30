@@ -56,7 +56,7 @@ def fetch_html(url, referer=None):
 
 def extract_jwp_sources(html):
     """Cari blok jwpSources dari halaman"""
-    match = re.search(r'jwpSources\s*=\s*(\[[\s\S]*?\])\s*,\s*\n\s*drmToken', html)
+    match = re.search(r'jwpSources\s*=\s*(\[[\s\S]*?\])\s*,\s*\n?\s*drmToken', html)
     if not match:
         return None
 
