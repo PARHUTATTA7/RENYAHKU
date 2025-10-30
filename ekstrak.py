@@ -61,15 +61,18 @@ def extract_jwp_sources(html):
         return None
 
     raw_json = match.group(1)
-    raw_json = raw_json.encode("utf-8").decode("unicode_escape")
+
+    # Bersihkan HTML entity & slash escape
     raw_json = raw_json.replace("\\/", "/")
     raw_json = unescape(raw_json)
 
     try:
+        # Langsung parse JSON
         return json.loads(raw_json)
     except json.JSONDecodeError as e:
-        print(f"❌ JSON decode error: {e}")
+        # Simpan untuk debugging
         Path("raw_jwpSources.txt").write_text(raw_json, encoding="utf-8")
+        print(f"❌ JSON decode error: {e}")
         print("🔍 Saved raw JSON to raw_jwpSources.txt for debugging")
         return None
 
