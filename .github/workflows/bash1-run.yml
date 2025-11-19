@@ -12,25 +12,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+      
       - name: Install yt-dlp dan jq
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
           pip install -U yt-dlp
           mkdir -p out
-
+      
       - name: Ambil file privat
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/cookies.txt $HOME/cookies2.txt || true
           cp private/urls.txt $HOME/urls.txt || true
-
+      
       - name: Jalankan bash1.sh
         run: |
           chmod +x bash1.sh
           ./bash1.sh --no-delay
-
+      
       - name: Commit dan Push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -38,20 +38,26 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-
-          # Pastikan repo lokal bersih & sinkron dengan remote (AMAN, tidak ganggu run lain)
-          git fetch origin
-          git reset --hard origin/master
-
-          # Update .last_bash1
+          
           echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')" > .last_bash1
-
-          # Stage semua perubahan dari bash1.sh
-          git add -A
-
-          # Commit jika ada perubahan
-          if git diff --cached --quiet; then
-            echo "Tidak ada perubahan"
+          
+          # Stash any potential changes before rebase
+          git stash
+          
+          # Sync with remote
+          git fetch origin
+          git rebase origin/master || git rebase --abort
+          
+          # Apply stashed changes if any
+          git stash pop || true
+          
+          # Add files to commit
+          find . -name "*.txt" -not -path "./private/*" -exec git add {} +
+          git add .last_bash1
+          
+          # Check if there are changes to commit
+          if git diff-index --quiet HEAD --; then
+            echo "✅ Tidak ada perubahan"
           else
             git commit -m "Update otomatis via bash1.sh - $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin master
