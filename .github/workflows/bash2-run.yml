@@ -13,9 +13,8 @@ jobs:
       - name: Checkout Repo Publik
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Get complete history for proper rebasing
+          fetch-depth: 0
 
-      - name: Install yt-dlp dan Python dependencies
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -35,29 +34,23 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Configure Git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          # Create timestamp file
           echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_bash2
 
-          # Stash changes before rebase
+          # stash sebelum rebase
           git stash
 
-          # Sync with remote
           git fetch origin
           git rebase origin/master || git rebase --abort
 
-          # Restore stashed changes
           git stash pop || true
 
-          # Add files
           git add -A
           git add .last_bash2
 
-          # Commit only if changes exist
           if git diff-index --quiet HEAD --; then
             echo "✅ Tidak ada perubahan"
           else
