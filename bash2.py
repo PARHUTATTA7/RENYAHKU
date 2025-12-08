@@ -18,45 +18,38 @@ USER_AGENT = (
 )
 
 # ============================================================
-# Ambil HLS dari sebuah PAGE (TAB)
+# Ambil HLS dengan NETWORK SNIFFER (paling stabil)
 # ============================================================
 async def get_hls_from_page(page, url):
+    hls_url = None
+
+    # Listener untuk menangkap semua request .m3u8 YouTube
+    def on_request(req):
+        nonlocal hls_url
+        u = req.url
+
+        if ("/api/manifest/hls_variant/" in u or ".m3u8" in u) and "expire=" in u:
+            hls_url = u
+
+    page.on("request", on_request)
+
     try:
-        await page.goto(url, wait_until="networkidle", timeout=60000)
+        await page.goto(url, wait_until="domcontentloaded", timeout=60000)
     except PlaywrightTimeout:
         print("❌ Timeout YouTube:", url)
         return None
-    except:
-        print("❌ Gagal buka halaman:", url)
+    except Exception as e:
+        print("❌ Gagal buka halaman:", url, e)
         return None
 
-    html = await page.content()
+    # Tunggu maksimal 20 detik sampai request HLS muncul
+    for _ in range(200):
+        if hls_url:
+            return hls_url
+        await asyncio.sleep(0.1)
 
-    pattern_main = r"ytInitialPlayerResponse\s*=\s*({.*?})\s*;"
-    match = re.search(pattern_main, html, re.S)
-
-    if not match:
-        pattern_alt = r'"_yt_player_response":\s*({.*?})\s*,\s*"responseContext"'
-        match = re.search(pattern_alt, html, re.S)
-
-    if not match:
-        print("❌ Tidak menemukan ytInitialPlayerResponse!")
-        return None
-
-    try:
-        data = json.loads(match.group(1))
-    except:
-        print("❌ JSON ytInitialPlayerResponse corrupt!")
-        return None
-
-    streaming = data.get("streamingData", {})
-    hls = streaming.get("hlsManifestUrl")
-
-    if not hls:
-        print("❌ hlsManifestUrl tidak ditemukan!")
-        return None
-
-    return hls
+    print("❌ Tidak menemukan HLS request!")
+    return None
 
 
 def safe_filename(name):
@@ -64,7 +57,7 @@ def safe_filename(name):
 
 
 # ============================================================
-# Versi PARALLEL — 1 browser → banyak URL
+# PARALLEL MODE — 1 browser → banyak tab
 # ============================================================
 async def process_all_parallel():
     if not URL_FILE.exists():
@@ -74,7 +67,7 @@ async def process_all_parallel():
     tasks = []
     items = []
 
-    # baca input URL dulu
+    # baca input URL
     with URL_FILE.open("r", encoding="utf-8") as f:
         for line in f:
             if not line.strip() or line.startswith("#"):
@@ -106,7 +99,7 @@ async def process_all_parallel():
 
 
 # ============================================================
-# Worker untuk setiap tab
+# Worker setiap tab
 # ============================================================
 async def worker_task(page, safe_name, url):
     print(f"[•] Ambil HLS → {safe_name}")
@@ -124,7 +117,7 @@ async def worker_task(page, safe_name, url):
 
 
 # ============================================================
-# GIT WORKFLOW
+# Git workflow
 # ============================================================
 def do_git():
     subprocess.run(["git", "config", "user.email", "actions@github.com"])
@@ -142,7 +135,7 @@ def do_git():
 
 
 # ============================================================
-# ENTRY POINT
+# Entry point
 # ============================================================
 def main():
     asyncio.run(process_all_parallel())
