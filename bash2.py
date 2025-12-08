@@ -36,48 +36,47 @@ def get_yt_dlp_output(url, format_code="best[ext=m3u8]", from_start=True):
     return lines[-1] if lines else ""
 
 def get_video_id(url):
-    # 1) ekstrak username dari URL /@xxxx/live
     import re
-    m = re.search(r"youtube\.com/@([^/]+)/?live?", url)
-    if not m:
-        return ""
 
-    username = m.group(1)
+    # 0) CEK langsung meta canonical (paling pasti untuk /live)
+    html = fetch_html(url)
+    if html:
+        m = re.search(r'link rel="canonical" href="https://www\.youtube\.com/watch\?v=([A-Za-z0-9_-]{11})"', html)
+        if m:
+            return m.group(1)
 
-    # 2) cari livestream dengan ytsearch (paling stabil)
-    #    filter is_live / live_now ------------------------------------------------
-    search_query = f"ytsearch10:{username} live"
-    data = run_cmd([
-        "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
-        "--user-agent", USER_AGENT, "--dump-single-json", search_query
-    ])
-
-    try:
-        info = json.loads(data)
-        if "entries" in info:
-            for e in info["entries"]:
-                if not e:
-                    continue
-
-                ls = e.get("live_status")
-                if ls in ("is_live", "live"):
-                    return e["id"]
-
-        # fallback ambil entri pertama
-        if info.get("entries"):
-            return info["entries"][0].get("id", "")
-
-    except:
-        pass
-
-    # 3) fallback terakhir: mode normal
+    # 1) fallback super cepat: yt-dlp forced
     vid = run_cmd([
-        "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
-        "--user-agent", USER_AGENT, "--no-playlist", "--flat-playlist", "--get-id", url
+        "yt-dlp", "--no-warnings", "--force-url",
+        "--cookies", COOKIES_FILE,
+        "--user-agent", USER_AGENT,
+        "--get-id", url
     ]).strip()
+    if vid:
+        return vid
 
-    return vid or ""
+    # 2) fallback: ytsearch1
+    m2 = re.search(r"youtube\.com/@([^/]+)/?live?", url)
+    if m2:
+        username = m2.group(1)
+        search_query = f"ytsearch1:{username} live"
 
+        data = run_cmd([
+            "yt-dlp", "--no-warnings",
+            "--cookies", COOKIES_FILE,
+            "--user-agent", USER_AGENT,
+            "--dump-single-json", search_query
+        ])
+        try:
+            info = json.loads(data)
+            if "entries" in info and info["entries"]:
+                e = info["entries"][0]
+                return e.get("id", "")
+        except:
+            pass
+
+    return ""
+    
 def safe_filename(name):
     return "".join(c for c in name if c.isalnum() or c in "_.-")
 
