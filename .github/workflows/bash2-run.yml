@@ -15,16 +15,14 @@ jobs:
         with:
           fetch-depth: 0  # Get complete history for proper rebasing
 
-      - name: Install yt-dlp dan Python dependencies
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
-          pip install -U yt-dlp
+          pip install playwright
+          playwright install chromium
 
       - name: Ambil cookies dan URL dari Repo Privat
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
-          cp private/cookies.txt $HOME/cookies.txt
           cp private/urls_live.txt $HOME/urls_live.txt
 
       - name: Jalankan bash2.py
