@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 
 import subprocess
 import datetime
@@ -18,109 +18,113 @@ USER_AGENT = (
 )
 
 # ============================================================
-# PLAYWRIGHT: Ambil HANYA hlsManifestUrl
+# Ambil HLS dari sebuah PAGE (TAB)
 # ============================================================
-async def get_hls_from_youtube(url):
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch(headless=True)
-        ctx = await browser.new_context(user_agent=USER_AGENT)
-        page = await ctx.new_page()
+async def get_hls_from_page(page, url):
+    try:
+        await page.goto(url, wait_until="networkidle", timeout=60000)
+    except PlaywrightTimeout:
+        print("❌ Timeout YouTube:", url)
+        return None
+    except:
+        print("❌ Gagal buka halaman:", url)
+        return None
 
-        try:
-            await page.goto(url, wait_until="networkidle", timeout=60000)
-        except PlaywrightTimeout:
-            print("❌ Timeout saat membuka halaman YouTube")
-            return None
-        except:
-            print("❌ Gagal membuka halaman YouTube")
-            return None
+    html = await page.content()
 
-        html = await page.content()
+    pattern_main = r"ytInitialPlayerResponse\s*=\s*({.*?})\s*;"
+    match = re.search(pattern_main, html, re.S)
 
-        # ============================================================
-        # 1️⃣ Regex utama: ytInitialPlayerResponse =
-        # ============================================================
-        pattern_main = r"ytInitialPlayerResponse\s*=\s*({.*?})\s*;"
-        match = re.search(pattern_main, html, re.S)
+    if not match:
+        pattern_alt = r'"_yt_player_response":\s*({.*?})\s*,\s*"responseContext"'
+        match = re.search(pattern_alt, html, re.S)
 
-        # ============================================================
-        # 2️⃣ Jika gagal, pakai alternatif _yt_player_response
-        # ============================================================
-        if not match:
-            pattern_alt = r'"_yt_player_response":\s*({.*?})\s*,\s*"responseContext"'
-            match = re.search(pattern_alt, html, re.S)
+    if not match:
+        print("❌ Tidak menemukan ytInitialPlayerResponse!")
+        return None
 
-        if not match:
-            print("❌ Tidak menemukan ytInitialPlayerResponse di halaman!")
-            return None
+    try:
+        data = json.loads(match.group(1))
+    except:
+        print("❌ JSON ytInitialPlayerResponse corrupt!")
+        return None
 
-        # ============================================================
-        # Parsing JSON
-        # ============================================================
-        try:
-            data = json.loads(match.group(1))
-        except Exception as e:
-            print("❌ JSON ytInitialPlayerResponse tidak valid:", e)
-            return None
+    streaming = data.get("streamingData", {})
+    hls = streaming.get("hlsManifestUrl")
 
-        streaming = data.get("streamingData", {})
+    if not hls:
+        print("❌ hlsManifestUrl tidak ditemukan!")
+        return None
 
-        # ============================================================
-        # 🔥 Fokus hanya ambil HLS
-        # ============================================================
-        hls = streaming.get("hlsManifestUrl")
-
-        if not hls:
-            print("❌ hlsManifestUrl tidak ditemukan!")
-            return None
-
-        return hls
+    return hls
 
 
-# ============================================================
-# HELPER
-# ============================================================
 def safe_filename(name):
     return "".join(c for c in name if c.isalnum() or c in "_.-")
 
 
 # ============================================================
-# PROCESSOR UTAMA
+# Versi PARALLEL — 1 browser → banyak URL
 # ============================================================
-async def process_all(use_from_start=True):
+async def process_all_parallel():
     if not URL_FILE.exists():
         print(f"[!] File {URL_FILE} tidak ditemukan")
         return
 
+    tasks = []
+    items = []
+
+    # baca input URL dulu
     with URL_FILE.open("r", encoding="utf-8") as f:
         for line in f:
-            if not line.strip() or line.strip().startswith("#"):
+            if not line.strip() or line.startswith("#"):
                 continue
 
             try:
                 name, url = line.strip().split(maxsplit=1)
-            except ValueError:
+                items.append((name, url))
+            except:
                 continue
 
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(headless=True)
+        ctx = await browser.new_context(user_agent=USER_AGENT)
+
+        for name, url in items:
+            page = await ctx.new_page()
             safe_name = safe_filename(name)
-            print(f"\n[*] Memproses: {name}")
+            print(f"\n[*] Paralel: {name}")
 
-            print("[•] Mengambil HLS dari ytInitialPlayerResponse...")
+            task = asyncio.create_task(
+                worker_task(page, safe_name, url)
+            )
+            tasks.append(task)
 
-            m3u8_url = await get_hls_from_youtube(url)
+        await asyncio.gather(*tasks)
 
-            if not m3u8_url:
-                print("[!] Gagal mendapatkan HLS!")
-                continue
-
-            out_path = WORKDIR / f"{safe_name}.m3u8.txt"
-            out_path.write_text(m3u8_url, encoding="utf-8")
-
-            print(f"[✓] URL HLS disimpan: {out_path.name}")
+        await browser.close()
 
 
 # ============================================================
-# GIT WORKFLOW — tetap sama
+# Worker untuk setiap tab
+# ============================================================
+async def worker_task(page, safe_name, url):
+    print(f"[•] Ambil HLS → {safe_name}")
+
+    m3u8_url = await get_hls_from_page(page, url)
+
+    if not m3u8_url:
+        print(f"[!] Gagal ambil HLS untuk {safe_name}")
+        return
+
+    out_path = WORKDIR / f"{safe_name}.m3u8.txt"
+    out_path.write_text(m3u8_url, encoding="utf-8")
+
+    print(f"[✓] Selesai → {out_path.name}")
+
+
+# ============================================================
+# GIT WORKFLOW
 # ============================================================
 def do_git():
     subprocess.run(["git", "config", "user.email", "actions@github.com"])
@@ -141,11 +145,7 @@ def do_git():
 # ENTRY POINT
 # ============================================================
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--no-from-start", action="store_true")
-    args = parser.parse_args()
-
-    asyncio.run(process_all(use_from_start=not args.no_from_start))
+    asyncio.run(process_all_parallel())
     do_git()
 
 
