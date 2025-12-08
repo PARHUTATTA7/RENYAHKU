@@ -36,43 +36,47 @@ def get_yt_dlp_output(url, format_code="best[ext=m3u8]", from_start=True):
     return lines[-1] if lines else ""
 
 def get_video_id(url):
-    # coba cara cepat dulu
+    # 1) ekstrak username dari URL /@xxxx/live
+    import re
+    m = re.search(r"youtube\.com/@([^/]+)/?live?", url)
+    if not m:
+        return ""
+
+    username = m.group(1)
+
+    # 2) cari livestream dengan ytsearch (paling stabil)
+    #    filter is_live / live_now ------------------------------------------------
+    search_query = f"ytsearch10:{username} live"
+    data = run_cmd([
+        "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
+        "--user-agent", USER_AGENT, "--dump-single-json", search_query
+    ])
+
+    try:
+        info = json.loads(data)
+        if "entries" in info:
+            for e in info["entries"]:
+                if not e:
+                    continue
+
+                ls = e.get("live_status")
+                if ls in ("is_live", "live"):
+                    return e["id"]
+
+        # fallback ambil entri pertama
+        if info.get("entries"):
+            return info["entries"][0].get("id", "")
+
+    except:
+        pass
+
+    # 3) fallback terakhir: mode normal
     vid = run_cmd([
         "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
         "--user-agent", USER_AGENT, "--no-playlist", "--flat-playlist", "--get-id", url
     ]).strip()
 
-    if vid:
-        return vid
-
-    # fallback dump json
-    data = run_cmd([
-        "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
-        "--user-agent", USER_AGENT, "--no-playlist", "--dump-single-json", url
-    ])
-
-    try:
-        info = json.loads(data)
-
-        # langsung ada id (bukan playlist)
-        if "id" in info:
-            return info["id"]
-
-        # kalau berupa playlist entries
-        if "entries" in info:
-            for entry in info["entries"]:
-                if not entry:
-                    continue
-                if entry.get("is_live") or entry.get("live_status") == "is_live":
-                    return entry["id"]
-            # fallback: ambil ID pertama
-            if info["entries"]:
-                return info["entries"][0].get("id", "")
-
-    except json.JSONDecodeError:
-        return ""
-
-    return ""
+    return vid or ""
 
 def safe_filename(name):
     return "".join(c for c in name if c.isalnum() or c in "_.-")
