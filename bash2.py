@@ -46,7 +46,7 @@ def get_video_id(url):
 
     # 2) cari livestream dengan ytsearch (paling stabil)
     #    filter is_live / live_now ------------------------------------------------
-    search_query = f"ytsearch10:{username} live"
+    search_query = f"ytsearch1:{username} live"
     data = run_cmd([
         "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
         "--user-agent", USER_AGENT, "--dump-single-json", search_query
