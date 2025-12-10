@@ -19,11 +19,46 @@ safe_filename() {
 }
 
 # ==========================================================
-#  get_video_id — ambil videoId dari ytInitialPlayerResponse
+#  jika URL sudah mengandung video ID, langsung return ID
+# ==========================================================
+extract_id_if_exists() {
+    local url="$1"
+
+    # Cek pola ?v=ID
+    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # Cek pola /shorts/ID
+    if [[ "$url" =~ shorts/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # Cek pola /live/ID
+    if [[ "$url" =~ live/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    return 1
+}
+
+# ==========================================================
+#  get_video_id — untuk URL channel atau live redirect
 # ==========================================================
 get_video_id() {
     local url="$1"
 
+    # 1️⃣ Coba cek apakah URL sudah punya ID → skip pencarian
+    video_id="$(extract_id_if_exists "$url")"
+    if [[ -n "$video_id" ]]; then
+        echo "$video_id"
+        return
+    fi
+
+    # 2️⃣ Ambil via HTML ytInitialPlayerResponse
     html="$(fetch_html "$url")"
     vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
 
@@ -32,7 +67,7 @@ get_video_id() {
         return
     fi
 
-    # fallback dengan yt-dlp (tanpa cookies)
+    # 3️⃣ Fallback yt-dlp
     vid="$(run_cmd yt-dlp --no-warnings --get-id "$url")"
     if [[ -n "$vid" ]]; then
         echo "$vid"
@@ -43,8 +78,7 @@ get_video_id() {
 }
 
 # ==========================================================
-#  get_master_m3u8 — cara PALING STABIL untuk YouTube LIVE
-#  langsung keluarkan manifest via yt-dlp -g
+#  get_master_m3u8 — ambil manifest YouTube LIVE
 # ==========================================================
 get_master_m3u8() {
     local url="$1"
