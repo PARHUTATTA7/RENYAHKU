@@ -73,6 +73,9 @@ get_master_m3u8() {
 
     master=$(yt-dlp -g \
         --no-warnings \
+        --prefer-insecure \
+        --no-check-certificate \
+        --socket-timeout 30 \
         "$url" 2>/dev/null)
 
     echo "$master"
