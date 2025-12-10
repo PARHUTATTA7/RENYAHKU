@@ -71,14 +71,28 @@ get_video_id() {
 get_master_m3u8() {
     local url="$1"
 
-    json=$(yt-dlp -J --no-warnings "$url" 2>/dev/null)
+    video_id=$(echo "$url" | grep -oE "v=[A-Za-z0-9_-]{11}" | cut -d= -f2)
 
-    # Ambil url format HLS pertama yang valid
-    master=$(echo "$json" | jq -r '
-        .formats[]
-        | select(.protocol == "m3u8" or .url | test("m3u8"))
-        | .url
-    ' | head -n 1)
+    [[ -z "$video_id" ]] && return 1
+
+    # Step 1: generate detail token
+    token=$(curl -s \
+        -X POST \
+        -d "id=$video_id" \
+        https://ssyoutube.online/en2/ | \
+        grep -oE "data-id=\"[A-Za-z0-9_-]+\"" | \
+        head -n1 | cut -d\" -f2)
+
+    [[ -z "$token" ]] && return 1
+
+    # Step 2: fetch detail JSON
+    json=$(curl -s \
+        -X POST \
+        -d "id=$token" \
+        https://ssyoutube.online/yt-video-detail/)
+
+    # Step 3: extract hls url
+    master=$(echo "$json" | grep -oE "https://[^\" ]+\.m3u8" | head -n1)
 
     echo "$master"
 }
