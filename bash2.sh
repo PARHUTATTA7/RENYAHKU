@@ -71,12 +71,14 @@ get_video_id() {
 get_master_m3u8() {
     local url="$1"
 
-    master=$(yt-dlp -g \
-        --no-warnings \
-        --prefer-insecure \
-        --no-check-certificate \
-        --socket-timeout 30 \
-        "$url" 2>/dev/null)
+    json=$(yt-dlp -J --no-warnings "$url" 2>/dev/null)
+
+    # Ambil url format HLS pertama yang valid
+    master=$(echo "$json" | jq -r '
+        .formats[]
+        | select(.protocol == "m3u8" or .url | test("m3u8"))
+        | .url
+    ' | head -n 1)
 
     echo "$master"
 }
