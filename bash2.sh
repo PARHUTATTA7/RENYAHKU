@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-
+REPO_NAME="RENYAHKU"
 USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 COOKIES_FILE="$HOME/cookies.txt"
 URL_FILE="$HOME/urls_live.txt"
+OUTPUT_DIR="$(pwd)"
 
 process() {
     name="$1"
