@@ -1,4 +1,4 @@
-name: Jalankan Bash2 Python untuk M3U8
+name: Jalankan Bash2 untuk M3U8
 
 on:
   workflow_dispatch:
