@@ -50,24 +50,13 @@ get_video_id() {
 get_master_m3u8() {
     local url="$1"
 
-    # 1. Cara utama: pakai format hls
-    master="$(run_cmd yt-dlp -g -f "hls" --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url")"
-    if [[ -n "$master" ]]; then
-        echo "$master"
-        return
-    fi
+    # Ambil semua format m3u8, lalu pilih yang TBR paling tinggi
+    best_format=$(yt-dlp -F --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url" \
+        | awk '/m3u8/ {print $1}' | sort -n | tail -n 1)
 
-    # 2. Fallback: semua tipe HLS
-    master="$(run_cmd yt-dlp -g -f "hls-144,hls-240,hls-360,hls-480,hls-720,hls-1080" \
-        --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url")"
-    if [[ -n "$master" ]]; then
-        echo "$master"
-        return
-    fi
-
-    # 3. Fallback terakhir: best (yt-dlp otomatis ambil manifest HLS)
-    master="$(run_cmd yt-dlp -g -f best --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url")"
-    if [[ -n "$master" ]]; then
+    if [[ -n "$best_format" ]]; then
+        master=$(yt-dlp -g -f "$best_format" \
+            --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url")
         echo "$master"
         return
     fi
