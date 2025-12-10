@@ -31,7 +31,7 @@ jobs:
       - name: Jalankan bash2.sh
         run: |
           chmod +x bash2.sh
-          ./bash2.sh --no-delay
+          ./bash2.sh
 
       - name: Commit dan Push hasil
         env:
