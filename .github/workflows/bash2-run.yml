@@ -15,11 +15,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
+      - name: Install yt-dlp dan jq
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
           pip install -U yt-dlp
+          mkdir -p out
 
       - name: Ambil cookies dan URL dari Repo Privat
         run: |
@@ -27,8 +28,10 @@ jobs:
           cp private/cookies.txt $HOME/cookies.txt
           cp private/urls_live.txt $HOME/urls_live.txt
 
-      - name: Jalankan bash2.py
-        run: python3 bash2.py --no-from-start
+      - name: Jalankan bash2.sh
+        run: |
+          chmod +x bash2.sh
+          ./bash2.sh --no-delay
 
       - name: Commit dan Push hasil
         env:
