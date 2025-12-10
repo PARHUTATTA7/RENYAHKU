@@ -5,6 +5,16 @@ COOKIES_FILE="$HOME/cookies.txt"
 URL_FILE="$HOME/urls_live.txt"
 WORKDIR="$(pwd)"
 
+resolve_id() {
+    yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" \
+           --get-id "$1" 2>/dev/null
+}
+
+get_manifest() {
+    yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" \
+           --print "%(manifest_url)s" "$1" 2>/dev/null
+}
+
 process() {
     name="$1"
     url="$2"
@@ -12,18 +22,28 @@ process() {
 
     echo "[*] Memproses: $name"
 
-    m3u8=$(yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" \
-                  --print "%(manifest_url)s" "$url" 2>/dev/null)
+    # 1. resolve video ID
+    vid=$(resolve_id "$url")
+
+    if [[ -z "$vid" ]]; then
+        echo "[!] Tidak menemukan live video: $url"
+        return
+    fi
+
+    full_url="https://www.youtube.com/watch?v=$vid"
+
+    # 2. ambil manifest HLS
+    m3u8=$(get_manifest "$full_url")
 
     if [[ "$m3u8" == http* && "$m3u8" == *m3u8* ]]; then
         echo "$m3u8" > "${safe}.m3u8.txt"
         echo "[✓] Tersimpan: ${safe}.m3u8.txt"
     else
-        echo "[!] Gagal ambil manifest: $url"
+        echo "[!] Manifest gagal untuk ID: $vid"
     fi
 }
 
-export -f process
+export -f process resolve_id get_manifest
 export USER_AGENT COOKIES_FILE
 
 grep -v '^#' "$URL_FILE" \
