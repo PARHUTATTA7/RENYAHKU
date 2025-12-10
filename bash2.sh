@@ -38,12 +38,12 @@ get_video_id() {
         return
     fi
 
-    # 3. Jika URL-nya @username/live → cari via ytsearch
+    # 3. Jika URL @username/live → search live video
     if [[ "$url" =~ youtube\.com/@([^/]+) ]]; then
         username="${BASH_REMATCH[1]}"
         data="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" --dump-single-json "ytsearch5:${username} live")"
 
-        vid="$(echo "$data" | jq -r '.entries[] | select(.live_status=="is_live" or .live_status=="live") | .id' 2>/dev/null | head -n 1)"
+        vid="$(echo "$data" | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
 
         if [[ -n "$vid" ]]; then
             echo "$vid"
@@ -54,22 +54,37 @@ get_video_id() {
     echo ""
 }
 
+# ==========================================================
+#  FIXED FUNCTION — DIRECT HLS MASTER FROM dump-single-json
+# ==========================================================
 get_master_m3u8() {
     url="$1"
 
-    manifest="$(run_cmd yt-dlp \
+    json="$(run_cmd yt-dlp \
         --no-warnings \
         --cookies "$COOKIES_FILE" \
         --user-agent "$USER_AGENT" \
-        --print "%(manifest_url)s" \
+        --dump-single-json \
         "$url"
     )"
 
-    if [[ "$manifest" == http* && "$manifest" == *m3u8* ]]; then
-        echo "$manifest"
-    else
-        echo ""
+    # 1. Ambil master HLS (hlsManifestUrl)
+    master="$(echo "$json" | grep -oP '"hlsManifestUrl"\s*:\s*"\K[^"]+')"
+
+    if [[ -n "$master" ]]; then
+        echo "$master"
+        return
     fi
+
+    # 2. Fallback: manifest_url (kadang DASH)
+    fallback="$(echo "$json" | grep -oP '"manifest_url"\s*:\s*"\K[^"]+' | grep m3u8 )"
+
+    if [[ -n "$fallback" ]]; then
+        echo "$fallback"
+        return
+    fi
+
+    echo ""
 }
 
 ### MAIN ###
