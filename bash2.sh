@@ -49,20 +49,14 @@ get_video_id() {
 get_master_m3u8() {
     local url="$1"
 
-    echo "    [debug] yt-dlp -g $url"
+    master=$(yt-dlp -g \
+        --cookies "$COOKIES_FILE" \
+        --no-warnings \
+        "$url" 2>/dev/null)
 
-    # Simpan output + error
-    master=$(yt-dlp -g "$url" 2>&1)
-    status=$?
-
-    echo "    [debug] output: $master"
-
-    # Jika sukses (exit code 0)
-    if [[ $status -eq 0 ]]; then
-        if echo "$master" | grep -q "http"; then
-            echo "$master"
-            return
-        fi
+    if [[ -n "$master" ]]; then
+        echo "$master"
+        return
     fi
 
     echo ""
