@@ -3,59 +3,48 @@ name: Jalankan Bash2 untuk M3U8
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */2 * * *'  # Tiap 2 jam
+    - cron: '0 */2 * * *'
 
 jobs:
-  run_bash2_py:
+  run_bash2:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo Publik
+      - name: Checkout repo utama
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install yt-dlp terbaru
+      - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y python3-pip ffmpeg jq
-          pip3 install -U yt-dlp
+          sudo apt install -y curl grep jq
 
-      - name: Ambil cookies dan URL dari Repo Privat
+      - name: Ambil cookies & url dari repo privat
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/cookies.txt $HOME/cookies.txt
           cp private/urls_live.txt $HOME/urls_live.txt
 
-      - name: Jalankan bash2.sh
+      - name: Jalankan script bash2.sh
         run: |
           chmod +x bash2.sh
           ./bash2.sh
 
-      - name: Commit dan Push hasil
+      - name: Commit hasil jika ada perubahan
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
 
-          echo "Terakhir dijalankan pada: $(date '+%Y-%m-%d %H:%M:%S')" > .last_bash2
+          git add *.m3u8.txt .last_bash2 || true
 
-          # stash sebelum rebase
-          git stash
-
-          git fetch origin
-          git rebase origin/master || git rebase --abort
-
-          git stash pop || true
-
-          git add -A
-          git add .last_bash2
-
-          if git diff-index --quiet HEAD --; then
-            echo "✅ Tidak ada perubahan"
+          if git diff --cached --quiet; then
+            echo "Tidak ada perubahan"
           else
-            git commit -m "Update dari bash2.py - $(date '+%Y-%m-%d %H:%M:%S')"
-            git push origin master
+            echo "Update: $(date)" > .last_bash2
+            git add .last_bash2
+            git commit -m "Update hasil bash2.sh $(date)"
+            git push origin HEAD:master
           fi
