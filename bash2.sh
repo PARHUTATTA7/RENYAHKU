@@ -68,25 +68,16 @@ get_master_m3u8() {
         "$url"
     )"
 
-    # 1. Ambil master HLS (hlsManifestUrl)
-    master="$(echo "$json" | grep -oP '"hlsManifestUrl"\s*:\s*"\K[^"]+')"
+    # Cari semua URL .m3u8 dari adaptiveFormats
+    master="$(echo "$json" | grep -oP '"url":\s*"\K[^"]+' | grep '\.m3u8' | head -n 1)"
 
     if [[ -n "$master" ]]; then
         echo "$master"
         return
     fi
 
-    # 2. Fallback: manifest_url (kadang DASH)
-    fallback="$(echo "$json" | grep -oP '"manifest_url"\s*:\s*"\K[^"]+' | grep m3u8 )"
-
-    if [[ -n "$fallback" ]]; then
-        echo "$fallback"
-        return
-    fi
-
     echo ""
 }
-
 ### MAIN ###
 if [[ ! -f "$URL_FILE" ]]; then
     echo "[!] File $URL_FILE tidak ditemukan!"
