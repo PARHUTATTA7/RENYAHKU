@@ -50,17 +50,23 @@ get_video_id() {
 get_master_m3u8() {
     local url="$1"
 
-    json="$(run_cmd yt-dlp \
-        --no-warnings \
-        --cookies "$COOKIES_FILE" \
-        --user-agent "$USER_AGENT" \
-        --dump-single-json \
-        "$url"
-    )"
+    # 1. Cara utama: pakai format hls
+    master="$(run_cmd yt-dlp -g -f "hls" --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url")"
+    if [[ -n "$master" ]]; then
+        echo "$master"
+        return
+    fi
 
-    # Ambil URL manifest HLS langsung dari JSON
-    master="$(echo "$json" | grep -oP '"hlsManifestUrl":\s*"\K[^"]+')"
+    # 2. Fallback: semua tipe HLS
+    master="$(run_cmd yt-dlp -g -f "hls-144,hls-240,hls-360,hls-480,hls-720,hls-1080" \
+        --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url")"
+    if [[ -n "$master" ]]; then
+        echo "$master"
+        return
+    fi
 
+    # 3. Fallback terakhir: best (yt-dlp otomatis ambil manifest HLS)
+    master="$(run_cmd yt-dlp -g -f best --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url")"
     if [[ -n "$master" ]]; then
         echo "$master"
         return
