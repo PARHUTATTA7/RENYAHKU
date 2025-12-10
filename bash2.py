@@ -23,7 +23,6 @@ def run_cmd(cmd):
     except subprocess.CalledProcessError:
         return ""
 
-# FIX: tambahkan fetch_html()
 def fetch_html(url):
     return run_cmd([
         "curl", "-A", USER_AGENT,
@@ -31,21 +30,49 @@ def fetch_html(url):
         url
     ])
 
-def get_yt_dlp_output(url, format_code="best[ext=m3u8]", from_start=True):
-    if not url:
-        return ""
+# ----------------------------
+# NEW FIX — ALWAYS GET VALID URL
+# ----------------------------
+def get_stream_url(url, from_start=True):
     cmd = [
-        "yt-dlp", "--no-warnings", "--cookies", COOKIES_FILE,
-        "--user-agent", USER_AGENT, "-g", "-f", format_code, url
+        "yt-dlp",
+        "--no-warnings",
+        "--cookies", COOKIES_FILE,
+        "--user-agent", USER_AGENT,
+        "--dump-single-json",
+        "-f", "bv*+ba/best",
+        url
     ]
     if from_start:
         cmd.insert(4, "--live-from-start")
-    output = run_cmd(cmd)
-    lines = output.splitlines()
-    return lines[-1] if lines else ""
+
+    raw = run_cmd(cmd)
+    if not raw:
+        return ""
+
+    try:
+        data = json.loads(raw)
+
+        # 1) direct URL (HLS or DASH)
+        main_url = data.get("url")
+        if main_url:
+            return main_url
+
+        # 2) playlist mode (entries)
+        if "entries" in data:
+            for e in data["entries"]:
+                u = e.get("url", "")
+                if u:
+                    return u
+
+    except:
+        pass
+
+    return ""
+
+# ----------------------------
 
 def get_video_id(url):
-    # 0) FAST PATH — cek canonical langsung (paling akurat)
     html = fetch_html(url)
     if html:
         m = re.search(
@@ -55,7 +82,6 @@ def get_video_id(url):
         if m:
             return m.group(1)
 
-    # 1) fallback yt-dlp get-id
     vid = run_cmd([
         "yt-dlp", "--no-warnings",
         "--cookies", COOKIES_FILE,
@@ -66,7 +92,6 @@ def get_video_id(url):
     if vid:
         return vid
 
-    # 2) fallback ytsearch untuk /@username/live
     m2 = re.search(r"youtube\.com/@([^/]+)/?live?", url)
     if m2:
         username = m2.group(1)
@@ -123,21 +148,18 @@ def main():
                 continue
 
             resolved_url = f"https://www.youtube.com/watch?v={video_id}"
-            m3u8_url = get_yt_dlp_output(resolved_url, "best[ext=m3u8]", from_start=use_from_start)
 
-            if not m3u8_url:
-                print(f"[!] Gagal ambil URL .m3u8, coba fallback format best")
-                m3u8_url = get_yt_dlp_output(resolved_url, "best", from_start=use_from_start)
+            # ---- FIXED ----
+            final_url = get_stream_url(resolved_url, from_start=use_from_start)
 
-            if not m3u8_url:
+            if not final_url:
                 print(f"[!] Gagal ambil URL streaming untuk: {resolved_url}")
                 continue
 
             out_path = WORKDIR / f"{safe_name}.m3u8.txt"
-            out_path.write_text(m3u8_url, encoding="utf-8")
+            out_path.write_text(final_url, encoding="utf-8")
             print(f"[✓] URL streaming disimpan: {out_path.name}")
 
-    # git ops
     subprocess.run(["git", "config", "user.email", "actions@github.com"])
     subprocess.run(["git", "config", "user.name", "GitHub Actions"])
     subprocess.run(["git", "add", "."], check=False)
