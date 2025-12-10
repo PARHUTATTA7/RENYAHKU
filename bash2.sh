@@ -11,7 +11,7 @@ run_cmd() {
 }
 
 fetch_html() {
-    curl -A "$USER_AGENT" -L -s --cookie "$COOKIES_FILE" "$1"
+    curl -A "$USER_AGENT" -L -s "$1"
 }
 
 safe_filename() {
@@ -19,14 +19,12 @@ safe_filename() {
 }
 
 # ==========================================================
-#  FIXED get_video_id → ambil dari ytInitialPlayerResponse
+#  get_video_id — ambil videoId dari ytInitialPlayerResponse
 # ==========================================================
 get_video_id() {
     local url="$1"
 
     html="$(fetch_html "$url")"
-
-    # Ambil videoId dari ytInitialPlayerResponse (Paling akurat)
     vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
 
     if [[ -n "$vid" ]]; then
@@ -34,8 +32,8 @@ get_video_id() {
         return
     fi
 
-    # Fallback via yt-dlp
-    vid="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" --get-id "$url")"
+    # fallback dengan yt-dlp (tanpa cookies)
+    vid="$(run_cmd yt-dlp --no-warnings --get-id "$url")"
     if [[ -n "$vid" ]]; then
         echo "$vid"
         return
@@ -45,18 +43,15 @@ get_video_id() {
 }
 
 # ==========================================================
-#  FIXED get_master_m3u8 → Ambil hlsManifestUrl
+#  get_master_m3u8 — cara PALING STABIL untuk YouTube LIVE
+#  langsung keluarkan manifest via yt-dlp -g
 # ==========================================================
 get_master_m3u8() {
     local url="$1"
 
-    # Ambil semua format m3u8, lalu pilih yang TBR paling tinggi
-    best_format=$(yt-dlp -F --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url" \
-        | awk '/m3u8/ {print $1}' | sort -n | tail -n 1)
+    master=$(yt-dlp -g --no-warnings "$url" 2>/dev/null)
 
-    if [[ -n "$best_format" ]]; then
-        master=$(yt-dlp -g -f "$best_format" \
-            --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" "$url")
+    if [[ -n "$master" ]]; then
         echo "$master"
         return
     fi
@@ -80,7 +75,6 @@ while read -r line; do
     echo "[*] Memproses: $name"
 
     video_id=$(get_video_id "$url")
-
     if [[ -z "$video_id" ]]; then
         echo "[!] Tidak bisa resolve video ID untuk: $url"
         continue
@@ -89,7 +83,6 @@ while read -r line; do
     resolved_url="https://www.youtube.com/watch?v=$video_id"
 
     m3u8=$(get_master_m3u8 "$resolved_url")
-
     if [[ -z "$m3u8" ]]; then
         echo "[!] Gagal ambil master HLS untuk: $resolved_url"
         continue
