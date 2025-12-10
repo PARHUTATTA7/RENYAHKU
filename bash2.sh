@@ -18,47 +18,37 @@ safe_filename() {
     echo "$1" | tr -cd '[:alnum:]_.-'
 }
 
+# ==========================================================
+#  FIXED get_video_id → ambil dari ytInitialPlayerResponse
+# ==========================================================
 get_video_id() {
     local url="$1"
 
-    # 1. Ambil canonical link dari HTML
     html="$(fetch_html "$url")"
-    vid="$(echo "$html" | grep -oP 'canonical" href="https://www.youtube.com/watch\?v=\K[A-Za-z0-9_-]{11}')"
+
+    # Ambil videoId dari ytInitialPlayerResponse (Paling akurat)
+    vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
 
     if [[ -n "$vid" ]]; then
         echo "$vid"
         return
     fi
 
-    # 2. Ambil ID via yt-dlp
+    # Fallback via yt-dlp
     vid="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" --get-id "$url")"
-
     if [[ -n "$vid" ]]; then
         echo "$vid"
         return
-    fi
-
-    # 3. Jika URL @username/live → search live video
-    if [[ "$url" =~ youtube\.com/@([^/]+) ]]; then
-        username="${BASH_REMATCH[1]}"
-        data="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" --dump-single-json "ytsearch5:${username} live")"
-
-        vid="$(echo "$data" | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
-
-        if [[ -n "$vid" ]]; then
-            echo "$vid"
-            return
-        fi
     fi
 
     echo ""
 }
 
 # ==========================================================
-#  FIXED FUNCTION — DIRECT HLS MASTER FROM dump-single-json
+#  FIXED get_master_m3u8 → Ambil hlsManifestUrl
 # ==========================================================
 get_master_m3u8() {
-    url="$1"
+    local url="$1"
 
     json="$(run_cmd yt-dlp \
         --no-warnings \
@@ -68,8 +58,8 @@ get_master_m3u8() {
         "$url"
     )"
 
-    # Cari semua URL .m3u8 dari adaptiveFormats
-    master="$(echo "$json" | grep -oP '"url":\s*"\K[^"]+' | grep '\.m3u8' | head -n 1)"
+    # Ambil URL manifest HLS langsung dari JSON
+    master="$(echo "$json" | grep -oP '"hlsManifestUrl":\s*"\K[^"]+')"
 
     if [[ -n "$master" ]]; then
         echo "$master"
@@ -78,6 +68,7 @@ get_master_m3u8() {
 
     echo ""
 }
+
 ### MAIN ###
 if [[ ! -f "$URL_FILE" ]]; then
     echo "[!] File $URL_FILE tidak ditemukan!"
