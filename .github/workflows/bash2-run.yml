@@ -18,7 +18,7 @@ jobs:
       - name: Install yt-dlp terbaru
         run: |
           sudo apt update
-          sudo apt install -y python3-pip ffmpeg
+          sudo apt install -y python3-pip ffmpeg jq
           pip3 install -U yt-dlp
 
       - name: Ambil cookies dan URL dari Repo Privat
