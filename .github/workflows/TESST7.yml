@@ -2,8 +2,7 @@ name: Daily M3U8 Grabber
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 */2 * * *' # jalan tiap 2 jam
+
 
 jobs:
   DAILY_m3u8:
