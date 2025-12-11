@@ -14,10 +14,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
+      - name: Install yt-dlp
         run: |
-          sudo apt update
-          sudo apt install -y curl grep jq
+          sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
+            -O /usr/local/bin/yt-dlp
+          sudo chmod +x /usr/local/bin/yt-dlp
 
       - name: Ambil cookies & url dari repo privat
         run: |
