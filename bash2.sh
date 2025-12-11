@@ -21,32 +21,32 @@ safe_filename() {
 get_video_id() {
     local url="$1"
 
-    # 1. Ambil HTML
+    # ========= 1. AMUNISI UTAMA — yt-dlp id langsung =========
+    json="$(run_cmd yt-dlp --no-warnings --dump-single-json "$url" 2>/dev/null)"
+    vid="$(echo "$json" | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    if [[ -n "$vid" ]]; then
+        echo "$vid"
+        return
+    fi
+
+    # Ambil HTML jika yt-dlp gagal
     html="$(fetch_html "$url")"
 
-    # --- A. Cek canonical langsung ---
+    # ========= 2. canonical =========
     vid="$(echo "$html" | grep -oP 'canonical" href="https://www.youtube.com/watch\?v=\K[A-Za-z0-9_-]{11}')"
     if [[ -n "$vid" ]]; then
         echo "$vid"
         return
     fi
 
-    # --- B. Cek currentVideoEndpoint (halaman /@user/live) ---
+    # ========= 3. currentVideoEndpoint.videoId =========
     vid="$(echo "$html" | grep -oP '"currentVideoEndpoint":\s*\{"videoId":\s*"\K[A-Za-z0-9_-]{11}')"
     if [[ -n "$vid" ]]; then
         echo "$vid"
         return
     fi
 
-    # --- C. Pakai yt-dlp dump JSON (AMUNISI TERAKHIR yang paling akurat) ---
-    json="$(run_cmd yt-dlp --no-warnings --dump-single-json "$url")"
-    vid="$(echo "$json" | grep -oP '"currentVideoEndpoint":.*"videoId":\s*"\K[A-Za-z0-9_-]{11}')"
-    if [[ -n "$vid" ]]; then
-        echo "$vid"
-        return
-    fi
-
-    # --- D. Fallback: cari di search ---
+    # ========= 4. Fallback — ytsearch username live =========
     if [[ "$url" =~ youtube\.com/@([^/]+) ]]; then
         username="${BASH_REMATCH[1]}"
         json2="$(run_cmd yt-dlp --no-warnings --dump-single-json "ytsearch5:${username} live")"
