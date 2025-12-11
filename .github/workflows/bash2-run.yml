@@ -26,9 +26,10 @@ jobs:
           cp private/cookies.txt $HOME/cookies.txt
           cp private/TESTYT_live.txt $HOME/TESTYT_live.txt
 
-      - name: Jalankan script Python
+      - name: Jalankan script bash2.sh
         run: |
-          python3 bash2.py
+          chmod +x bash2.sh
+          ./bash2.sh
 
       - name: Commit hasil jika ada perubahan
         env:
