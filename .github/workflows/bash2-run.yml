@@ -43,6 +43,10 @@ jobs:
             echo "[!] WARNING: VISITOR_INFO1_LIVE not found! Using fallback cookies."
           fi
 
+      # ⭐ WAJIB ADA — supaya bash2.sh bisa memilih kualitas HD via jq
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
       - name: Jalankan script bash2.sh
         run: |
           chmod +x bash2.sh
