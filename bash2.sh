@@ -21,26 +21,36 @@ safe_filename() {
 get_video_id() {
     local url="$1"
 
-    # 1. Ambil canonical link
+    # 1. Ambil HTML
     html="$(fetch_html "$url")"
+
+    # --- A. Cek canonical langsung ---
     vid="$(echo "$html" | grep -oP 'canonical" href="https://www.youtube.com/watch\?v=\K[A-Za-z0-9_-]{11}')"
     if [[ -n "$vid" ]]; then
         echo "$vid"
         return
     fi
 
-    # 2. Ambil ID via yt-dlp (tanpa cookie)
-    vid="$(run_cmd yt-dlp --no-warnings --user-agent "$USER_AGENT" --get-id "$url")"
+    # --- B. Cek currentVideoEndpoint (halaman /@user/live) ---
+    vid="$(echo "$html" | grep -oP '"currentVideoEndpoint":\s*\{"videoId":\s*"\K[A-Za-z0-9_-]{11}')"
     if [[ -n "$vid" ]]; then
         echo "$vid"
         return
     fi
 
-    # 3. Jika URL @username/live → search
+    # --- C. Pakai yt-dlp dump JSON (AMUNISI TERAKHIR yang paling akurat) ---
+    json="$(run_cmd yt-dlp --no-warnings --dump-single-json "$url")"
+    vid="$(echo "$json" | grep -oP '"currentVideoEndpoint":.*"videoId":\s*"\K[A-Za-z0-9_-]{11}')"
+    if [[ -n "$vid" ]]; then
+        echo "$vid"
+        return
+    fi
+
+    # --- D. Fallback: cari di search ---
     if [[ "$url" =~ youtube\.com/@([^/]+) ]]; then
         username="${BASH_REMATCH[1]}"
-        data="$(run_cmd yt-dlp --no-warnings --user-agent "$USER_AGENT" --dump-single-json "ytsearch5:${username} live")"
-        vid="$(echo "$data" | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
+        json2="$(run_cmd yt-dlp --no-warnings --dump-single-json "ytsearch5:${username} live")"
+        vid="$(echo "$json2" | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
         if [[ -n "$vid" ]]; then
             echo "$vid"
             return
