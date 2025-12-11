@@ -42,17 +42,17 @@ def get_video_id(url: str):
         print(f"        → {i}")
 
     for vid in cand:
-        if not vid.startswith("UC"):   # Pastikan bukan channel
+        if not vid.startswith("UC"):
             print(f"    [DBG] PICKED (yt-dlp): {vid}")
             return vid
 
-    # ---------- 2. Load HTML ----------
+    # ---------- 2. LOAD HTML ----------
     html = fetch_html(url)
     print(f"    [DBG] HTML Loaded: {'YES' if html else 'NO'}")
 
-    # Canonical
+    # 2a. Canonical (FIXED)
     canonical = re.findall(
-        r'canonical" href="https://www.youtube.com/watch\?v=([A-Za-z0-9_-]{11})"',
+        r'rel=["\']canonical["\'][^>]*href=["\']https://www\.youtube\.com/watch\?v=([A-Za-z0-9_-]{11})',
         html
     )
     print(f"    [DBG] Canonical ID: {canonical[0] if canonical else ''}")
@@ -61,7 +61,7 @@ def get_video_id(url: str):
         print(f"    [DBG] PICKED (canonical): {canonical[0]}")
         return canonical[0]
 
-    # currentVideoEndpoint
+    # 2b. currentVideoEndpoint
     cur = re.findall(
         r'"currentVideoEndpoint":\s*{"videoId":"([A-Za-z0-9_-]{11})"',
         html
@@ -72,15 +72,18 @@ def get_video_id(url: str):
         print(f"    [DBG] PICKED (currentVideoEndpoint): {cur[0]}")
         return cur[0]
 
-    # ---------- 3. Fallback Username Search ----------
+    # ---------- 3. Fallback Search (FIXED) ----------
     match = re.search(r'youtube\.com/@([^/]+)', url)
     if match:
         username = match.group(1)
         print(f"    [DBG] Fallback search username: {username}")
 
-        json2 = run_cmd(["yt-dlp", "--no-warnings",
-                         "--dump-single-json",
-                         f"ytsearch5:{username} live"])
+        json2 = run_cmd([
+            "yt-dlp", "--no-warnings",
+            "--dump-single-json",
+            "--match-filter", "is_live",
+            f"ytsearchdate10:{username}"
+        ])
 
         print("    [DBG] Semua kandidat ID dari ytsearch:")
         cand2 = re.findall(r'"id":\s*"([A-Za-z0-9_-]{11})"', json2)
@@ -89,7 +92,7 @@ def get_video_id(url: str):
 
         for vid in cand2:
             if not vid.startswith("UC"):
-                print(f"    [DBG] PICKED (ytsearch): {vid}")
+                print(f"    [DBG] PICKED (ytsearch-live): {vid}")
                 return vid
 
     print("    [DBG] FAILED — No valid ID found")
