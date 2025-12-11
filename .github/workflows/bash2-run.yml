@@ -27,6 +27,22 @@ jobs:
           cp private/cookies.txt $HOME/cookies.txt
           cp private/urls_live.txt $HOME/urls_live.txt
 
+      # 🔥 PATCH BARU
+      - name: Refresh Cookies YouTube (Super Stable)
+        run: |
+          echo "[*] Refreshing YouTube cookies..."
+          curl -s -A "Mozilla/5.0" \
+            -D "$HOME/cookies.txt" \
+            "https://www.youtube.com/watch?v=AAAAAAAAAAA" \
+            -o /dev/null
+
+          echo "[*] Verifikasi cookie..."
+          if grep -q "VISITOR_INFO1_LIVE" "$HOME/cookies.txt"; then
+            echo "[✓] Cookies updated successfully."
+          else
+            echo "[!] WARNING: VISITOR_INFO1_LIVE not found! Using fallback cookies."
+          fi
+
       - name: Jalankan script bash2.sh
         run: |
           chmod +x bash2.sh
