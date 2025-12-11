@@ -14,11 +14,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install dependency Python
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install requests
-
       - name: Install yt-dlp
         run: |
           sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
