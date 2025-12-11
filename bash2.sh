@@ -62,51 +62,22 @@ get_video_id() {
 get_master_m3u8() {
     local url="$1"
     local json master
-
+    
     json="$(run_cmd yt-dlp \
         --no-warnings \
         --cookies "$COOKIES_FILE" \
         --user-agent "$USER_AGENT" \
         --dump-single-json \
         "$url")"
-
-    # Jika JSON kosong → langsung FAIL
-    if [[ -z "$json" || "$json" == "null" ]]; then
-        echo ""
-        return 1
-    fi
-
-    # Jika streamingData tidak ada → FAIL aman tanpa error jq
-    if ! echo "$json" | jq -e '.streamingData.adaptiveFormats' >/dev/null 2>&1; then
-        echo ""
-        return 1
-    fi
-
-    # Ambil m3u8 tertinggi
-    master="$(
-        echo "$json" \
-        | jq -r '
-            .streamingData.adaptiveFormats
-            | map(select(.url != null and (.url|test("m3u8"))))
-            | sort_by(.height)
-            | reverse
-            | .[0].url // empty
-        ' 2>/dev/null
-    )"
-
+    
+    # Cari semua URL .m3u8 dari adaptiveFormats
+    master="$(echo "$json" | grep -oP '"url":\s*"\K[^"]+' | grep '\.m3u8' | head -n 2)"
+    
     if [[ -n "$master" ]]; then
         echo "$master"
         return 0
     fi
-
-    # Fallback kedua: url biasa tanpa filter tinggi
-    master="$(echo "$json" | jq -r '.streamingData.adaptiveFormats[]?.url // empty' | grep '\.m3u8' | head -n 1)"
-
-    if [[ -n "$master" ]]; then
-        echo "$master"
-        return 0
-    fi
-
+    
     echo ""
     return 1
 }
