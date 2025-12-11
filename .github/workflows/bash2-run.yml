@@ -2,7 +2,8 @@ name: Jalankan Bash2 untuk M3U8
 
 on:
   workflow_dispatch:
-
+  schedule:
+    - cron: '0 */3 * * *'
 
 jobs:
   run_bash2:
