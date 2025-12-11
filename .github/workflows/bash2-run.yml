@@ -14,6 +14,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install dependency Python
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install requests
+
       - name: Install yt-dlp
         run: |
           sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
@@ -26,10 +31,9 @@ jobs:
           cp private/cookies.txt $HOME/cookies.txt
           cp private/urls_live.txt $HOME/urls_live.txt
 
-      - name: Jalankan script bash2.sh
+      - name: Jalankan script Python
         run: |
-          chmod +x bash2.sh
-          ./bash2.sh
+          python3 bash2.py
 
       - name: Commit hasil jika ada perubahan
         env:
