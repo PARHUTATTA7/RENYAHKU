@@ -63,6 +63,23 @@ get_master_m3u8() {
     local url="$1"
     local json master
     
+    # Pertama, coba langsung ambil URL m3u8 dengan opsi -g (get-url)
+    master="$(run_cmd yt-dlp \
+        --no-warnings \
+        --cookies "$COOKIES_FILE" \
+        --user-agent "$USER_AGENT" \
+        -g \
+        --hls-prefer-native \
+        --format "best[height>=720]" \
+        "$url")"
+    
+    # Cek apakah output adalah URL m3u8
+    if [[ -n "$master" && "$master" == *".m3u8"* ]]; then
+        echo "$master"
+        return 0
+    fi
+    
+    # Jika tidak berhasil dengan -g, coba dengan dump json
     json="$(run_cmd yt-dlp \
         --no-warnings \
         --cookies "$COOKIES_FILE" \
@@ -71,7 +88,22 @@ get_master_m3u8() {
         "$url")"
     
     # Cari semua URL .m3u8 dari adaptiveFormats
-    master="$(echo "$json" | grep -oP '"url":\s*"\K[^"]+' | grep '\.m3u8' | head -n 2)"
+    master="$(echo "$json" | grep -oP '"url":\s*"\K[^"]+' | grep '\.m3u8' | head -n 1)"
+    
+    if [[ -n "$master" ]]; then
+        echo "$master"
+        return 0
+    fi
+    
+    # Coba lagi dengan format specifik untuk live
+    master="$(run_cmd yt-dlp \
+        --no-warnings \
+        --cookies "$COOKIES_FILE" \
+        --user-agent "$USER_AGENT" \
+        -g \
+        --hls-prefer-native \
+        --format "best[ext=m3u8]/best" \
+        "$url")"
     
     if [[ -n "$master" ]]; then
         echo "$master"
