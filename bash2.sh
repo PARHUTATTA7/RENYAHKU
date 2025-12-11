@@ -104,7 +104,14 @@ get_master_m3u8() {
         --dump-single-json \
         "$url")"
 
-    master="$(echo "$json" | grep -oP '"url":\s*"\K[^"]+' | grep '\.m3u8' | head -n 1)"
+    # Cari kualitas tertinggi (pref: 1080p → 720p → 480p)
+    master="$(echo "$json" | jq -r '
+        .streamingData.adaptiveFormats
+        | map(select(.url != null))
+        | sort_by(.height)
+        | reverse
+        | .[0].url // empty
+    ')"
 
     if [[ -n "$master" ]]; then
         echo "$master"
@@ -114,7 +121,6 @@ get_master_m3u8() {
     echo ""
     return 1
 }
-
 # =================================================
 #  MAIN PROGRAM
 # =================================================
