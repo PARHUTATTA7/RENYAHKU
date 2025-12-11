@@ -21,44 +21,78 @@ safe_filename() {
 get_video_id() {
     local url="$1"
 
-    # ========= 1. AMUNISI UTAMA — yt-dlp id langsung =========
+    echo "    [DBG] URL: $url"
+
+    # ========== 1. YT-DLP JSON ==========
     json="$(run_cmd yt-dlp --no-warnings --dump-single-json "$url" 2>/dev/null)"
-    vid="$(echo "$json" | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
+
+    echo "    [DBG] Sumber yt-dlp JSON loaded: $( [[ -n "$json" ]] && echo YES || echo NO )"
+
+    echo "    [DBG] Semua kandidat ID dari yt-dlp:"
+    echo "$json" | grep -oP '"[^"]*id"?:\s*"[A-Za-z0-9_-]+"' | sed 's/^/        → /'
+
+    # Filter ID valid (video 11 chars, exclude channel 'UC...')
+    vid="$(echo "$json" |
+        grep -oP '(?<="id":\s*")[A-Za-z0-9_-]{11}(?=")' |
+        grep -v '^UC' | head -n 1)"
+
     if [[ -n "$vid" ]]; then
+        echo "    [DBG] PICKED (yt-dlp): $vid"
         echo "$vid"
         return
     fi
 
-    # Ambil HTML jika yt-dlp gagal
+
+    # ========== 2. HTML ==========
     html="$(fetch_html "$url")"
+    echo "    [DBG] HTML Loaded: $( [[ -n "$html" ]] && echo YES || echo NO )"
 
-    # ========= 2. canonical =========
-    vid="$(echo "$html" | grep -oP 'canonical" href="https://www.youtube.com/watch\?v=\K[A-Za-z0-9_-]{11}')"
-    if [[ -n "$vid" ]]; then
-        echo "$vid"
+    # Canonical
+    can="$(echo "$html" | grep -oP 'canonical" href="https://www.youtube.com/watch\?v=\K[A-Za-z0-9_-]{11}')"
+    echo "    [DBG] Canonical ID: $can"
+
+    if [[ -n "$can" ]]; then
+        echo "    [DBG] PICKED (canonical): $can"
+        echo "$can"
         return
     fi
 
-    # ========= 3. currentVideoEndpoint.videoId =========
-    vid="$(echo "$html" | grep -oP '"currentVideoEndpoint":\s*\{"videoId":\s*"\K[A-Za-z0-9_-]{11}')"
-    if [[ -n "$vid" ]]; then
-        echo "$vid"
+    # currentVideoEndpoint.videoId
+    cur="$(echo "$html" | grep -oP '"currentVideoEndpoint":\s*\{"videoId":\s*"\K[A-Za-z0-9_-]{11}')"
+    echo "    [DBG] currentVideoEndpoint.videoId: $cur"
+
+    if [[ -n "$cur" ]]; then
+        echo "    [DBG] PICKED (currentVideoEndpoint): $cur"
+        echo "$cur"
         return
     fi
 
-    # ========= 4. Fallback — ytsearch username live =========
+
+    # ========== 3. Fallback Pencarian ==========
     if [[ "$url" =~ youtube\.com/@([^/]+) ]]; then
         username="${BASH_REMATCH[1]}"
+        echo "    [DBG] Fallback search username: $username"
+
         json2="$(run_cmd yt-dlp --no-warnings --dump-single-json "ytsearch5:${username} live")"
-        vid="$(echo "$json2" | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
-        if [[ -n "$vid" ]]; then
-            echo "$vid"
+
+        echo "    [DBG] Semua kandidat ID dari ytsearch:"
+        echo "$json2" | grep -oP '"id":\s*"[A-Za-z0-9_-]+"' | sed 's/^/        → /'
+
+        vid2="$(echo "$json2" |
+            grep -oP '(?<="id":\s*")[A-Za-z0-9_-]{11}(?=")' |
+            grep -v '^UC' | head -n 1)"
+
+        if [[ -n "$vid2" ]]; then
+            echo "    [DBG] PICKED (search): $vid2"
+            echo "$vid2"
             return
         fi
     fi
 
+    echo "    [DBG] FAILED — No valid ID found"
     echo ""
 }
+
 
 # ==========================================================
 # 2. AMBIL MASTER M3U8 DARI INVIDIOUS (TANPA COOKIE)
