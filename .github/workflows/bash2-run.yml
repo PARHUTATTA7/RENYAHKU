@@ -29,7 +29,7 @@ jobs:
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
           cp private/cookies.txt $HOME/cookies.txt
-          cp private/urls_live.txt $HOME/urls_live.txt
+          cp private/TESTYT_live.txt $HOME/TESTYT_live.txt
 
       - name: Jalankan script Python
         run: |
