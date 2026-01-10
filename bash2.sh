@@ -52,15 +52,18 @@ get_master_m3u8() {
     local url="$1"
     local best_id hls
 
-    # Cari format ID HLS tertinggi (LIVE YouTube)
-    best_id="$(run_cmd yt-dlp -F "$url" \
-        | awk '/m3u8/ {print $1}' \
+    # 1️⃣ Ambil format ID HLS tertinggi (JANGAN suppress stderr, JANGAN pakai cookies)
+    best_id="$(yt-dlp -F "$url" \
+        | awk '/ m3u8 / {print $1}' \
         | sort -n \
         | tail -n 1)"
 
-    [[ -z "$best_id" ]] && return 1
+    if [[ -z "$best_id" ]]; then
+        echo "[debug] Tidak menemukan format m3u8"
+        return 1
+    fi
 
-    # Ambil URL m3u8 dari ID tersebut
+    # 2️⃣ Ambil URL HLS dari ID tersebut (BARU pakai cookies)
     hls="$(run_cmd yt-dlp \
         --no-warnings \
         --cookies "$COOKIES_FILE" \
