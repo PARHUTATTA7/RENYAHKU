@@ -6,210 +6,118 @@ COOKIES_FILE="$HOME/cookies.txt"
 URL_FILE="$HOME/urls_live.txt"
 WORKDIR="$(pwd)"
 
-# Fungsi untuk menjalankan command dengan suppression error
 run_cmd() {
     "$@" 2>/dev/null
 }
 
-# Fungsi untuk fetch HTML
 fetch_html() {
     curl -A "$USER_AGENT" -L -s --cookie "$COOKIES_FILE" "$1"
 }
 
-# Fungsi untuk membuat nama file yang aman
 safe_filename() {
     echo "$1" | tr -cd '[:alnum:]_.-'
 }
 
-# Fungsi untuk mendapatkan video ID dari URL
+# =========================
+# RESOLVE VIDEO ID
+# =========================
 get_video_id() {
     local url="$1"
-    
-    # 1. Ambil canonical link dari HTML
+    local html vid
+
     html="$(fetch_html "$url")"
-    vid="$(echo "$html" | grep -oP 'canonical" href="https://www.youtube.com/watch\?v=\K[A-Za-z0-9_-]{11}')"
-    
-    if [[ -n "$vid" ]]; then
-        echo "$vid"
-        return 0
-    fi
-    
-    # 2. Ambil ID via yt-dlp
+    vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+
+    [[ -n "$vid" ]] && echo "$vid" && return 0
+
     vid="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" --get-id "$url")"
-    
-    if [[ -n "$vid" ]]; then
-        echo "$vid"
-        return 0
-    fi
-    
-    # 3. Jika URL @username/live → search live video
+    [[ -n "$vid" ]] && echo "$vid" && return 0
+
     if [[ "$url" =~ youtube\.com/@([^/]+) ]]; then
-        username="${BASH_REMATCH[1]}"
-        data="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" --dump-single-json "ytsearch5:${username} live")"
-        vid="$(echo "$data" | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
-        
-        if [[ -n "$vid" ]]; then
-            echo "$vid"
-            return 0
-        fi
+        local user="${BASH_REMATCH[1]}"
+        vid="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" \
+            --user-agent "$USER_AGENT" \
+            --dump-single-json "ytsearch1:${user} live" \
+            | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
+        [[ -n "$vid" ]] && echo "$vid" && return 0
     fi
-    
-    echo ""
+
     return 1
 }
 
-# Fungsi untuk mendapatkan master m3u8 dari JSON
+# =========================
+# GET HLS URL (LIVE SAFE)
+# =========================
 get_master_m3u8() {
     local url="$1"
-    local json master
-    
-    # Pertama, coba langsung ambil URL m3u8 dengan opsi -g (get-url)
-    master="$(run_cmd yt-dlp \
+    local best_id hls
+
+    # Cari format ID HLS tertinggi (LIVE YouTube)
+    best_id="$(run_cmd yt-dlp -F "$url" \
+        | awk '/m3u8/ {print $1}' \
+        | sort -n \
+        | tail -n 1)"
+
+    [[ -z "$best_id" ]] && return 1
+
+    # Ambil URL m3u8 dari ID tersebut
+    hls="$(run_cmd yt-dlp \
         --no-warnings \
         --cookies "$COOKIES_FILE" \
         --user-agent "$USER_AGENT" \
         -g \
-        --hls-prefer-native \
-        --format "best[height>=720]" \
+        -f "$best_id" \
         "$url")"
-    
-    # Cek apakah output adalah URL m3u8
-    if [[ -n "$master" && "$master" == *".m3u8"* ]]; then
-        echo "$master"
-        return 0
-    fi
-    
-    # Jika tidak berhasil dengan -g, coba dengan dump json
-    json="$(run_cmd yt-dlp \
-        --no-warnings \
-        --cookies "$COOKIES_FILE" \
-        --user-agent "$USER_AGENT" \
-        --dump-single-json \
-        "$url")"
-    
-    # Cari semua URL .m3u8 dari adaptiveFormats
-    master="$(echo "$json" | grep -oP '"url":\s*"\K[^"]+' | grep '\.m3u8' | head -n 1)"
-    
-    if [[ -n "$master" ]]; then
-        echo "$master"
-        return 0
-    fi
-    
-    # Coba lagi dengan format specifik untuk live
-    master="$(run_cmd yt-dlp \
-        --no-warnings \
-        --cookies "$COOKIES_FILE" \
-        --user-agent "$USER_AGENT" \
-        -g \
-        --hls-prefer-native \
-        --format "best[ext=m3u8]/best" \
-        "$url")"
-    
-    if [[ -n "$master" ]]; then
-        echo "$master"
-        return 0
-    fi
-    
-    echo ""
+
+    [[ -n "$hls" ]] && echo "$hls" && return 0
     return 1
 }
 
-### MAIN PROGRAM ###
+# =========================
+# MAIN
+# =========================
+[[ ! -f "$URL_FILE" ]] && echo "[!] File $URL_FILE tidak ditemukan!" && exit 1
+command -v yt-dlp >/dev/null || { echo "[!] yt-dlp belum terinstall"; exit 1; }
+command -v curl >/dev/null || { echo "[!] curl belum terinstall"; exit 1; }
 
-# Cek apakah file URL ada
-if [[ ! -f "$URL_FILE" ]]; then
-    echo "[!] File $URL_FILE tidak ditemukan!"
-    exit 1
-fi
-
-# Cek dependencies
-if ! command -v yt-dlp &> /dev/null; then
-    echo "[!] yt-dlp tidak ditemukan. Harap install terlebih dahulu."
-    exit 1
-fi
-
-if ! command -v curl &> /dev/null; then
-    echo "[!] curl tidak ditemukan. Harap install terlebih dahulu."
-    exit 1
-fi
-
-# Proses setiap baris dalam file URL
 while IFS= read -r line; do
-    # Skip baris kosong atau komentar
-    [[ -z "$line" ]] && continue
-    [[ "$line" =~ ^[[:space:]]*# ]] && continue
-    
-    # Parse nama dan URL (menggunakan tab atau spasi sebagai delimiter)
-    name=$(echo "$line" | awk '{print $1}')
-    url=$(echo "$line" | sed 's/^[[:space:]]*[^[:space:]]*[[:space:]]*//')
-    
-    # Validasi
-    if [[ -z "$name" || -z "$url" ]]; then
-        echo "[!] Format tidak valid: $line"
-        continue
-    fi
-    
-    safe=$(safe_filename "$name")
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+
+    name="$(echo "$line" | awk '{print $1}')"
+    url="$(echo "$line" | sed 's/^[^ ]* //')"
+
+    [[ -z "$name" || -z "$url" ]] && continue
+
+    safe="$(safe_filename "$name")"
     echo "[*] Memproses: $name"
-    
-    # Dapatkan video ID
-    video_id=$(get_video_id "$url")
-    
-    if [[ -z "$video_id" ]]; then
-        echo "[!] Tidak bisa resolve video ID untuk: $url"
-        continue
-    fi
-    
-    resolved_url="https://www.youtube.com/watch?v=$video_id"
-    echo "[+] Resolved URL: $resolved_url"
-    
-    # Dapatkan master m3u8
-    m3u8=$(get_master_m3u8 "$resolved_url")
-    
-    if [[ -z "$m3u8" ]]; then
-        echo "[!] Gagal ambil master HLS untuk: $resolved_url"
-        continue
-    fi
-    
-    # Simpan ke file
-    output_file="$WORKDIR/${safe}.m3u8.txt"
-    echo "$m3u8" > "$output_file"
-    
-    if [[ -f "$output_file" ]]; then
-        echo "[✓] Disimpan: $output_file"
-    else
-        echo "[!] Gagal menyimpan file: $output_file"
-    fi
-    
+
+    vid="$(get_video_id "$url")"
+    [[ -z "$vid" ]] && echo "[!] Gagal resolve ID" && continue
+
+    resolved="https://www.youtube.com/watch?v=$vid"
+    echo "[+] Resolved URL: $resolved"
+
+    m3u8="$(get_master_m3u8 "$resolved")"
+    [[ -z "$m3u8" ]] && echo "[!] HLS tidak tersedia (LIVE belum aktif?)" && continue
+
+    outfile="$WORKDIR/${safe}.m3u8.txt"
+    echo "$m3u8" > "$outfile"
+    echo "[✓] Disimpan: $outfile"
+
 done < "$URL_FILE"
 
-### GIT OPERATIONS ###
-
-# Konfigurasi git
+# =========================
+# GIT
+# =========================
 git config user.email "actions@github.com"
 git config user.name "GitHub Actions"
 
-# Commit jika ada perubahan
 git add .
-
 if ! git diff --cached --quiet; then
-    commit_msg="Update dari $REPO_NAME/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')"
-    git commit -m "$commit_msg"
-    
-    # Sync dengan remote
+    git commit -m "Update $REPO_NAME - $(date '+%Y-%m-%d %H:%M:%S')"
     git fetch origin master
-    
-    # Gunakan strategy yang lebih aman
-    if git merge --strategy-option=theirs origin/master 2>/dev/null; then
-        git push origin master
-        echo "[✓] Berhasil push ke repository"
-    else
-        echo "[!] Gagal merge dengan remote"
-        # Fallback: force push jika diperlukan
-        git push --force-with-lease origin master
-    fi
-else
-    echo "[i] Tidak ada perubahan yang perlu di-commit"
+    git merge --strategy-option=theirs origin/master 2>/dev/null || true
+    git push --force-with-lease origin master
 fi
 
 echo "[✓] Script selesai"
