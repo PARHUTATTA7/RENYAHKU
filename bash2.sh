@@ -46,21 +46,63 @@ get_video_id() {
     return 1
 }
 
-# ================= HLS =================
-# YouTube LIVE tidak punya "master m3u8"
-# Ambil HLS playlist terbaik yang tersedia
+# ================= GET LIVE STREAM URL =================
+# Khusus untuk YouTube live streaming
 
-get_master_m3u8() {
+get_live_stream_url() {
     local url="$1"
-
-    yt-dlp -4 \
+    local stream_url
+    
+    # Method 1: Coba format live stream khusus
+    stream_url="$(run_cmd yt-dlp \
         --no-warnings \
         --cookies "$COOKIES_FILE" \
         --user-agent "$USER_AGENT" \
-        --extractor-args "youtube:player_client=android" \
-        --hls-prefer-native \
-        -g "$url" 2>/dev/null \
-    | grep -m1 '\.m3u8'
+        --live-from-start \
+        -f "best[format_id*=91]/best[height<=720]/best" \
+        -g "$url" 2>/dev/null | head -n 1)"
+    
+    [[ -n "$stream_url" ]] && { echo "$stream_url"; return 0; }
+    
+    # Method 2: Coba format lainnya
+    stream_url="$(run_cmd yt-dlp \
+        --no-warnings \
+        --cookies "$COOKIES_FILE" \
+        --user-agent "$USER_AGENT" \
+        -f "best" \
+        -g "$url" 2>/dev/null | head -n 1)"
+    
+    [[ -n "$stream_url" ]] && { echo "$stream_url"; return 0; }
+    
+    # Method 3: Coba dengan format yang lebih spesifik
+    stream_url="$(run_cmd yt-dlp \
+        --no-warnings \
+        --cookies "$COOKIES_FILE" \
+        --user-agent "$USER_AGENT" \
+        --format "bestvideo+bestaudio/best" \
+        -g "$url" 2>/dev/null | head -n 1)"
+    
+    echo "$stream_url"
+}
+
+# ================= CHECK IF LIVE =================
+
+check_if_live() {
+    local url="$1"
+    local status
+    
+    # Cek apakah video sedang live
+    status="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" \
+        --user-agent "$USER_AGENT" --dump-json "$url" 2>/dev/null | \
+        grep -o '"is_live":\s*true' | head -n 1)"
+    
+    if [[ -n "$status" ]]; then
+        echo "[+] Video sedang LIVE"
+        return 0
+    else
+        echo "[-] Video TIDAK sedang live"
+        return 1
+    fi
 }
 
 # ================= MAIN =================
@@ -86,15 +128,34 @@ while IFS= read -r line; do
 
     resolved_url="https://www.youtube.com/watch?v=$video_id"
     echo "[+] Resolved URL: $resolved_url"
+    
+    # Cek status live
+    if ! check_if_live "$resolved_url"; then
+        echo "[!] Video tidak sedang live, skip..."
+        continue
+    fi
 
-    m3u8="$(get_master_m3u8 "$resolved_url")"
-    [[ -z "$m3u8" || "$m3u8" != *".m3u8"* ]] && {
-        echo "[!] Gagal ambil HLS: $resolved_url"
+    stream_url="$(get_live_stream_url "$resolved_url")"
+    [[ -z "$stream_url" ]] && {
+        echo "[!] Gagal ambil stream URL: $resolved_url"
+        # Debug: coba lihat informasi lengkap
+        echo "[*] Debug info:"
+        run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" -F "$resolved_url"
         continue
     }
 
-    output_file="$WORKDIR/${safe}.m3u8.txt"
-    echo "$m3u8" > "$output_file"
+    # Cek apakah URL valid (mengandung http)
+    if [[ "$stream_url" != http* ]]; then
+        echo "[!] Stream URL tidak valid: $stream_url"
+        continue
+    fi
+    
+    echo "[+] Berhasil dapat stream URL"
+    echo "[*] Stream URL: ${stream_url:0:80}..."
+
+    # Simpan URL stream ke file
+    output_file="$WORKDIR/${safe}.txt"
+    echo "$stream_url" > "$output_file"
     echo "[✓] Disimpan: $output_file"
 
 done < "$URL_FILE"
