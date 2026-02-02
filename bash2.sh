@@ -46,63 +46,82 @@ get_video_id() {
     return 1
 }
 
-# ================= GET LIVE STREAM URL =================
-# Khusus untuk YouTube live streaming
+# ================= GET LIVE STREAM URL (SOLUSI BARU) =================
 
 get_live_stream_url() {
     local url="$1"
     local stream_url
     
-    # Method 1: Coba format live stream khusus
+    # SOLUSI: Gunakan player_client=android seperti contoh Anda
+    # Ini memaksa yt-dlp menggunakan client Android yang lebih mudah mendapatkan HLS
+    
+    echo "[*] Mencoba dengan player_client=android..."
+    stream_url="$(run_cmd yt-dlp \
+        --no-warnings \
+        --cookies "$COOKIES_FILE" \
+        --user-agent "$USER_AGENT" \
+        --extractor-args "youtube:player_client=android" \
+        -f "best[height<=720]" \
+        -g "$url" 2>/dev/null | head -n 1)"
+    
+    [[ -n "$stream_url" && "$stream_url" == *".m3u8"* ]] && { 
+        echo "[+] Berhasil dengan player_client=android"
+        echo "$stream_url"
+        return 0
+    }
+    
+    # Fallback 1: Coba dengan tambahan parameter live
+    echo "[*] Mencoba dengan live-from-start..."
     stream_url="$(run_cmd yt-dlp \
         --no-warnings \
         --cookies "$COOKIES_FILE" \
         --user-agent "$USER_AGENT" \
         --live-from-start \
-        -f "best[format_id*=91]/best[height<=720]/best" \
-        -g "$url" 2>/dev/null | head -n 1)"
-    
-    [[ -n "$stream_url" ]] && { echo "$stream_url"; return 0; }
-    
-    # Method 2: Coba format lainnya
-    stream_url="$(run_cmd yt-dlp \
-        --no-warnings \
-        --cookies "$COOKIES_FILE" \
-        --user-agent "$USER_AGENT" \
+        --extractor-args "youtube:player_client=android" \
         -f "best" \
         -g "$url" 2>/dev/null | head -n 1)"
     
-    [[ -n "$stream_url" ]] && { echo "$stream_url"; return 0; }
+    [[ -n "$stream_url" ]] && { 
+        echo "[+] Berhasil dengan live-from-start"
+        echo "$stream_url"
+        return 0
+    }
     
-    # Method 3: Coba dengan format yang lebih spesifik
+    # Fallback 2: Coba format khusus live
+    echo "[*] Mencoba format live khusus..."
     stream_url="$(run_cmd yt-dlp \
         --no-warnings \
         --cookies "$COOKIES_FILE" \
         --user-agent "$USER_AGENT" \
-        --format "bestvideo+bestaudio/best" \
+        --extractor-args "youtube:player_client=android" \
+        -f "bestvideo[height<=720]+bestaudio/best[height<=720]" \
         -g "$url" 2>/dev/null | head -n 1)"
     
     echo "$stream_url"
 }
 
-# ================= CHECK IF LIVE =================
+# ================= SIMPLE LIVE CHECK =================
 
-check_if_live() {
+quick_live_check() {
     local url="$1"
-    local status
     
-    # Cek apakah video sedang live
-    status="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" \
-        --user-agent "$USER_AGENT" --dump-json "$url" 2>/dev/null | \
-        grep -o '"is_live":\s*true' | head -n 1)"
+    # Cepat cek apakah ada format live (91-96) atau kata live
+    local formats
+    formats="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" \
+        --user-agent "$USER_AGENT" --list-formats "$url" 2>/dev/null)"
     
-    if [[ -n "$status" ]]; then
-        echo "[+] Video sedang LIVE"
+    if echo "$formats" | grep -q "91\|92\|93\|94\|95\|96\|live"; then
         return 0
-    else
-        echo "[-] Video TIDAK sedang live"
-        return 1
     fi
+    
+    # Cek di HTML
+    local html
+    html="$(fetch_html "$url" | head -1000)"
+    if echo "$html" | grep -qi "live\|broadcast"; then
+        return 0
+    fi
+    
+    return 1
 }
 
 # ================= MAIN =================
@@ -111,6 +130,10 @@ check_if_live() {
 command -v yt-dlp >/dev/null || { echo "[!] yt-dlp tidak ditemukan"; exit 1; }
 command -v curl >/dev/null || { echo "[!] curl tidak ditemukan"; exit 1; }
 
+# Counter untuk statistik
+success_count=0
+fail_count=0
+
 while IFS= read -r line; do
     [[ -z "$line" ]] && continue
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
@@ -118,63 +141,112 @@ while IFS= read -r line; do
     name="$(echo "$line" | awk '{print $1}')"
     url="$(echo "$line" | sed 's/^[[:space:]]*[^[:space:]]*[[:space:]]*//')"
 
-    [[ -z "$name" || -z "$url" ]] && { echo "[!] Format tidak valid: $line"; continue; }
-
-    safe="$(safe_filename "$name")"
-    echo "[*] Memproses: $name"
-
-    video_id="$(get_video_id "$url")"
-    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID"; continue; }
-
-    resolved_url="https://www.youtube.com/watch?v=$video_id"
-    echo "[+] Resolved URL: $resolved_url"
-    
-    # Cek status live
-    if ! check_if_live "$resolved_url"; then
-        echo "[!] Video tidak sedang live, skip..."
-        continue
-    fi
-
-    stream_url="$(get_live_stream_url "$resolved_url")"
-    [[ -z "$stream_url" ]] && {
-        echo "[!] Gagal ambil stream URL: $resolved_url"
-        # Debug: coba lihat informasi lengkap
-        echo "[*] Debug info:"
-        run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" -F "$resolved_url"
+    [[ -z "$name" || -z "$url" ]] && { 
+        echo "[!] Format tidak valid: $line"
+        ((fail_count++))
         continue
     }
 
-    # Cek apakah URL valid (mengandung http)
+    safe="$(safe_filename "$name")"
+    echo ""
+    echo "========================================"
+    echo "[*] Memproses: $name"
+    echo "[*] URL: $url"
+
+    # Dapatkan video ID atau gunakan URL langsung
+    video_id="$(get_video_id "$url")"
+    if [[ -n "$video_id" ]]; then
+        resolved_url="https://www.youtube.com/watch?v=$video_id"
+        echo "[+] Video ID: $video_id"
+    else
+        resolved_url="$url"
+        echo "[+] Menggunakan URL langsung"
+    fi
+    
+    echo "[+] Target URL: $resolved_url"
+    
+    # Quick check (optional)
+    if quick_live_check "$resolved_url"; then
+        echo "[+] Terdeteksi sebagai live stream"
+    else
+        echo "[*] Tidak terdeteksi live, tetap lanjut..."
+    fi
+    
+    # Ambil stream URL dengan metode baru
+    echo "[*] Mengambil stream URL..."
+    stream_url="$(get_live_stream_url "$resolved_url")"
+    
+    # Validasi hasil
+    if [[ -z "$stream_url" || "$stream_url" == "null" || "$stream_url" == "NA" ]]; then
+        echo "[!] GAGAL: Tidak dapat stream URL"
+        echo "[*] Debug - Testing manual command:"
+        echo "     yt-dlp -g --extractor-args \"youtube:player_client=android\" \"$resolved_url\""
+        
+        # Coba langsung command yang Anda berikan
+        temp_result="$(run_cmd yt-dlp -4 -g --extractor-args "youtube:player_client=android" "$resolved_url")"
+        if [[ -n "$temp_result" ]]; then
+            echo "[!] TAPI berhasil dengan command langsung!"
+            stream_url="$temp_result"
+        else
+            ((fail_count++))
+            continue
+        fi
+    fi
+    
+    # Pastikan URL valid
     if [[ "$stream_url" != http* ]]; then
-        echo "[!] Stream URL tidak valid: $stream_url"
+        echo "[!] ERROR: URL tidak valid: $stream_url"
+        ((fail_count++))
         continue
     fi
     
-    echo "[+] Berhasil dapat stream URL"
-    echo "[*] Stream URL: ${stream_url:0:80}..."
-
-    # Simpan URL stream ke file
+    # Cek apakah URL mengandung m3u8 (optional)
+    if [[ "$stream_url" == *".m3u8"* ]]; then
+        echo "[✓] URL mengandung m3u8 (HLS)"
+    fi
+    
+    # Tampilkan preview URL
+    echo "[✓] SUKSES: Dapat stream URL"
+    echo "[*] Preview URL: ${stream_url:0:100}..."
+    
+    # Simpan ke file
     output_file="$WORKDIR/${safe}.txt"
     echo "$stream_url" > "$output_file"
-    echo "[✓] Disimpan: $output_file"
+    echo "[✓] Disimpan ke: $output_file"
+    
+    ((success_count++))
+    
+    # Beri jeda singkat antara proses
+    sleep 1
 
 done < "$URL_FILE"
 
+# ================= SUMMARY =================
+echo ""
+echo "========================================"
+echo "           HASIL PROSES"
+echo "========================================"
+echo "[✓] Berhasil: $success_count"
+echo "[!] Gagal: $fail_count"
+echo "========================================"
+
 # ================= GIT =================
 
-git config user.email "actions@github.com"
-git config user.name "GitHub Actions"
+if [[ $success_count -gt 0 ]]; then
+    git config user.email "actions@github.com"
+    git config user.name "GitHub Actions"
 
-git add .
+    git add .
 
-if ! git diff --cached --quiet; then
-    git commit -m "Update dari $REPO_NAME/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')"
-    git fetch origin master
-    git merge --strategy-option=theirs origin/master 2>/dev/null || true
-    git push origin master --force-with-lease
-    echo "[✓] Berhasil push ke repository"
-else
-    echo "[i] Tidak ada perubahan"
+    if ! git diff --cached --quiet; then
+        git commit -m "Update stream URLs - $(date '+%Y-%m-%d %H:%M:%S') - Success: $success_count"
+        git fetch origin master
+        git merge --strategy-option=theirs origin/master 2>/dev/null || true
+        git push origin master --force-with-lease
+        echo "[✓] Berhasil push ke repository"
+    else
+        echo "[i] Tidak ada perubahan"
+    fi
 fi
 
 echo "[✓] Script selesai"
