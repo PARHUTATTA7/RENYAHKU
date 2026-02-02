@@ -53,13 +53,14 @@ get_video_id() {
 get_master_m3u8() {
     local url="$1"
 
-    run_cmd yt-dlp \
+    yt-dlp -4 \
         --no-warnings \
         --cookies "$COOKIES_FILE" \
         --user-agent "$USER_AGENT" \
+        --extractor-args "youtube:player_client=android" \
         --hls-prefer-native \
-        -f best \
-        -g "$url" | head -n 1
+        -g "$url" 2>/dev/null \
+    | grep -m1 '\.m3u8'
 }
 
 # ================= MAIN =================
