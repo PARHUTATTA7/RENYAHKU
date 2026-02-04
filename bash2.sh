@@ -6,11 +6,9 @@ COOKIES_FILE="$HOME/cookies.txt"
 URL_FILE="$HOME/urls_live.txt"
 WORKDIR="$(pwd)"
 
-# ================= UTIL =================
+API_FILE="$HOME/base_api.txt"
 
-run_cmd() {
-    "$@" 2>/dev/null
-}
+# ================= UTIL =================
 
 fetch_html() {
     curl -A "$USER_AGENT" -L -s --cookie "$COOKIES_FILE" "$1"
@@ -20,56 +18,87 @@ safe_filename() {
     echo "$1" | tr -cd '[:alnum:]_.-'
 }
 
-# ================= VIDEO ID =================
+# ================= LOAD API BASE =================
+
+load_api_base() {
+    [[ ! -f "$API_FILE" ]] && { echo "[!] File API tidak ditemukan: $API_FILE"; exit 1; }
+
+    API_BASE="$(cat "$API_FILE" | head -n 1 | tr -d '\r\n')"
+
+    [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
+
+    echo "[+] API_BASE loaded: $API_BASE"
+}
+
+# ================= VIDEO ID EXTRACTOR =================
 
 get_video_id() {
     local url="$1"
-    local html vid data username
+    local html vid
 
-    # 1. canonical link
-    html="$(fetch_html "$url")"
-    vid="$(echo "$html" | grep -oP 'canonical" href="https://www.youtube.com/watch\?v=\K[A-Za-z0-9_-]{11}')"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
-    # 2. yt-dlp get-id
-    vid="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" --get-id "$url")"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
-    # 3. @username/live
-    if [[ "$url" =~ youtube\.com/@([^/]+) ]]; then
-        username="${BASH_REMATCH[1]}"
-        data="$(run_cmd yt-dlp --no-warnings --cookies "$COOKIES_FILE" --user-agent "$USER_AGENT" --dump-single-json "https://www.youtube.com/@${username}/live")"
-        vid="$(echo "$data" | grep -oP '"id":\s*"\K[A-Za-z0-9_-]{11}' | head -n 1)"
-        [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+    # 1) watch?v=
+    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
     fi
+
+    # 2) youtu.be/ID
+    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # 3) /live/ID
+    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # 4) /shorts/ID
+    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # 5) /embed/ID
+    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # 6) parse HTML kalau @username/live atau url aneh
+    html="$(fetch_html "$url")"
+
+    # canonical
+    vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+
+    # videoId
+    vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+
+    # watch?v=
+    vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
     return 1
 }
 
-# ================= HLS =================
-# YouTube LIVE tidak punya "master m3u8"
-# Ambil HLS playlist terbaik yang tersedia
+# ================= GET M3U8 FROM API =================
 
-get_master_m3u8() {
-    local url="$1"
-    local out
+get_m3u8_from_api() {
+    local video_id="$1"
+    local api_url="${API_BASE}${video_id}"
 
-    out="$(yt-dlp -4 \
-        --no-warnings \
-        --cookies "$COOKIES_FILE" \
-        --user-agent "$USER_AGENT" \
-        --extractor-args "youtube:player_client=android" \
-        --hls-prefer-native \
-        -g "$url" 2>/dev/null | head -n 1)"
-
-    [[ "$out" == https://manifest.googlevideo.com/* ]] && echo "$out"
+    curl -A "$USER_AGENT" -L -s "$api_url" | tr -d '\r'
 }
 
 # ================= MAIN =================
 
 [[ ! -f "$URL_FILE" ]] && { echo "[!] File $URL_FILE tidak ditemukan"; exit 1; }
-command -v yt-dlp >/dev/null || { echo "[!] yt-dlp tidak ditemukan"; exit 1; }
 command -v curl >/dev/null || { echo "[!] curl tidak ditemukan"; exit 1; }
+
+load_api_base
 
 while IFS= read -r line; do
     [[ -z "$line" ]] && continue
@@ -84,16 +113,16 @@ while IFS= read -r line; do
     echo "[*] Memproses: $name"
 
     video_id="$(get_video_id "$url")"
-    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID"; continue; }
+    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID: $url"; continue; }
 
-    resolved_url="https://www.youtube.com/watch?v=$video_id"
-    echo "[+] Resolved URL: $resolved_url"
+    echo "[+] Video ID: $video_id"
 
-    m3u8="$(get_master_m3u8 "$resolved_url")"
-    [[ -z "$m3u8" || "$m3u8" != *".m3u8"* ]] && {
-        echo "[!] Gagal ambil HLS: $resolved_url"
+    m3u8="$(get_m3u8_from_api "$video_id")"
+
+    if [[ -z "$m3u8" || "$m3u8" != *".m3u8"* ]]; then
+        echo "[!] API gagal kasih m3u8 untuk ID: $video_id"
         continue
-    }
+    fi
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
     echo "$m3u8" > "$output_file"
