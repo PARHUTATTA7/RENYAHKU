@@ -33,51 +33,36 @@ load_api_base() {
 
 get_video_id() {
     local url="$1"
-    local html vid
+    local html vid hls
 
-    # watch?v=ID
-    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
-    fi
+    # direct patterns
+    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
 
-    # youtu.be/ID
-    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
-    fi
-
-    # youtube.com/live/ID
-    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
-    fi
-
-    # youtube.com/shorts/ID
-    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
-    fi
-
-    # youtube.com/embed/ID
-    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
-    fi
-
-    # fallback: parse HTML
+    # fetch html
     html="$(fetch_html "$url")"
+    [[ -z "$html" ]] && return 1
 
-    # canonical
-    vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    # 1) PRIORITY: extract from hlsManifestUrl
+    hls="$(echo "$html" | grep -aoP '"hlsManifestUrl":"\Khttps:\\/\\/manifest\.googlevideo\.com[^"]+' | head -n 1)"
+    if [[ -n "$hls" ]]; then
+        hls="$(echo "$hls" | sed 's#\\/#/#g')"
+        vid="$(echo "$hls" | grep -oP '/id/\K[^.]+' | head -n 1)"
+        if [[ "$vid" =~ ^[A-Za-z0-9_-]{11}$ ]]; then
+            echo "$vid"
+            return 0
+        fi
+    fi
+
+    # 2) canonical
+    vid="$(echo "$html" | grep -aoP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
-    # videoId
-    vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
-    # watch?v=
-    vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    # 3) fallback: videoId (LAST OPTION)
+    vid="$(echo "$html" | grep -aoP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
     return 1
