@@ -27,7 +27,7 @@ load_api_base() {
 
     [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
 
-    echo "[+] API_BASE loaded: $API_BASE"
+    echo "[+] API_BASE loaded"
 }
 
 # ================= VIDEO ID EXTRACTOR =================
@@ -90,7 +90,9 @@ get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
 
-    curl -A "$USER_AGENT" -L -s "$api_url" | tr -d '\r'
+    curl -A "$USER_AGENT" -L -s "$api_url" \
+      | sed 's/\x0//g' \
+      | tr -d '\r'
 }
 
 # ================= MAIN =================
