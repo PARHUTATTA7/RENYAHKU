@@ -4,9 +4,8 @@ REPO_NAME="RENYAHKU"
 USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36"
 COOKIES_FILE="$HOME/cookies.txt"
 URL_FILE="$HOME/urls_live.txt"
-WORKDIR="$(pwd)"
-
 API_FILE="$HOME/base_api.txt"
+WORKDIR="$(pwd)"
 
 # ================= UTIL =================
 
@@ -23,7 +22,7 @@ safe_filename() {
 load_api_base() {
     [[ ! -f "$API_FILE" ]] && { echo "[!] File API tidak ditemukan: $API_FILE"; exit 1; }
 
-    API_BASE="$(cat "$API_FILE" | head -n 1 | tr -d '\r\n')"
+    API_BASE="$(head -n 1 "$API_FILE" | tr -d '\r\n')"
 
     [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
 
@@ -36,37 +35,37 @@ get_video_id() {
     local url="$1"
     local html vid
 
-    # 1) watch?v=
+    # watch?v=ID
     if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # 2) youtu.be/ID
+    # youtu.be/ID
     if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # 3) /live/ID
+    # youtube.com/live/ID
     if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # 4) /shorts/ID
+    # youtube.com/shorts/ID
     if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # 5) /embed/ID
+    # youtube.com/embed/ID
     if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # 6) parse HTML kalau @username/live atau url aneh
+    # fallback: parse HTML
     html="$(fetch_html "$url")"
 
     # canonical
@@ -91,8 +90,10 @@ get_m3u8_from_api() {
     local api_url="${API_BASE}${video_id}"
 
     curl -A "$USER_AGENT" -L -s "$api_url" \
-      | sed 's/\x0//g' \
-      | tr -d '\r'
+        | tr -d '\000' \
+        | tr -d '\r' \
+        | grep -oE 'https?://[^"]+\.m3u8[^"]*' \
+        | tail -n 1
 }
 
 # ================= MAIN =================
@@ -112,6 +113,7 @@ while IFS= read -r line; do
     [[ -z "$name" || -z "$url" ]] && { echo "[!] Format tidak valid: $line"; continue; }
 
     safe="$(safe_filename "$name")"
+
     echo "[*] Memproses: $name"
 
     video_id="$(get_video_id "$url")"
@@ -120,14 +122,11 @@ while IFS= read -r line; do
     echo "[+] Video ID: $video_id"
 
     m3u8="$(get_m3u8_from_api "$video_id")"
-
-    if [[ -z "$m3u8" || "$m3u8" != *".m3u8"* ]]; then
-        echo "[!] API gagal kasih m3u8 untuk ID: $video_id"
-        continue
-    fi
+    [[ -z "$m3u8" ]] && { echo "[!] API gagal kasih m3u8 untuk ID: $video_id"; continue; }
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
     echo "$m3u8" > "$output_file"
+
     echo "[✓] Disimpan: $output_file"
 
 done < "$URL_FILE"
