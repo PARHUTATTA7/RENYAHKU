@@ -35,15 +35,12 @@ get_video_id() {
     local url="$1"
     local vid=""
 
-    command -v yt-dlp >/dev/null 2>&1 || return 1
-
-    vid="$(yt-dlp --no-warnings --skip-download --get-id "$url" 2>/dev/null \
+    vid="$(python3 -m yt_dlp --no-warnings --skip-download --get-id "$url" 2>/dev/null \
         | tr -d '\r' \
         | grep -E '^[A-Za-z0-9_-]{11}$' \
         | head -n 1)"
 
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
     return 1
 }
 
