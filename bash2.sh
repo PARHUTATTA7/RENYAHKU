@@ -77,46 +77,26 @@ get_video_id() {
 
 # ================= GET MASTER PLAYLIST =================
 
-extract_first_m3u8_url() {
-    # ambil URL m3u8 pertama dari response API, tanpa head/pipe broken
-    echo "$1" | grep -aoE 'https?://[^"[:space:]]+\.m3u8[^"[:space:]]*' | sed -n '1p'
-}
-
-get_master_playlist() {
+get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
-    local api_text m3u8_url playlist
+    local api_text
 
-    api_text="$(curl_get "$api_url")"
+    api_text="$(curl -A "$USER_AGENT" -L -s "$api_url" | tr -d '\000' | tr -d '\r')"
+
     [[ -z "$api_text" ]] && return 1
 
-    m3u8_url="$(extract_first_m3u8_url "$api_text")"
-    [[ -z "$m3u8_url" ]] && return 1
+    # Prioritas ambil hls_variant (itag 0 biasanya)
+    local variant
+    variant="$(echo "$api_text" | grep -aoE 'https?://[^"[:space:]]+\.m3u8[^"[:space:]]*' | grep -m 1 "hls_variant")"
 
-    playlist="$(curl_get "$m3u8_url")"
-    [[ -z "$playlist" ]] && return 1
-
-    # kalau sudah master (punya stream-inf), simpan itu
-    if echo "$playlist" | grep -q "#EXT-X-STREAM-INF"; then
-        echo "$playlist"
+    if [[ -n "$variant" ]]; then
+        echo "$variant"
         return 0
     fi
 
-    # kalau bukan master, coba cari "hls_variant" dari response API (kalau ada)
-    local variant_url
-    variant_url="$(echo "$api_text" | grep -aoE 'https?://[^"[:space:]]+hls_variant[^"[:space:]]+\.m3u8[^"[:space:]]*' | sed -n '1p')"
-
-    if [[ -n "$variant_url" ]]; then
-        playlist="$(curl_get "$variant_url")"
-        if echo "$playlist" | grep -q "#EXT-X-STREAM-INF"; then
-            echo "$playlist"
-            return 0
-        fi
-    fi
-
-    # fallback: simpan playlist biasa juga
-    echo "$playlist"
-    return 0
+    # Kalau gak ada hls_variant, ambil link m3u8 pertama
+    echo "$api_text" | grep -aoE 'https?://[^"[:space:]]+\.m3u8[^"[:space:]]*' | sed -n '1p'
 }
 
 # ================= MAIN =================
