@@ -5,7 +5,6 @@ on:
   schedule:
     - cron: '0 */3 * * *'   # setiap 3 jam
 
-
 jobs:
   run_bash2:
     runs-on: ubuntu-latest
@@ -15,9 +14,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: Install yt-dlp
-        run: pip install -U yt-dlp
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -U yt-dlp
+
+      - name: Add python user bin to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Ambil cookies & url dari repo privat
         run: |
@@ -32,19 +36,18 @@ jobs:
           ./bash2.sh
 
       - name: Commit hasil jika ada perubahan
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add *.m3u8.txt .last_bash2 || true
+          echo "Update: $(date)" > .last_bash2
+
+          git add .last_bash2 || true
+          git add *.m3u8.txt 2>/dev/null || true
 
           if git diff --cached --quiet; then
             echo "Tidak ada perubahan"
           else
-            echo "Update: $(date)" > .last_bash2
-            git add .last_bash2
-            git commit -m "Update hasil bash2.sh $(date)"
+            git commit -m "Update hasil bash2.sh $(date '+%Y-%m-%d %H:%M:%S')"
             git push origin HEAD:master
           fi
