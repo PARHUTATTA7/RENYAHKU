@@ -46,22 +46,28 @@ get_video_id() {
 get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
-    local all_m3u8
-    all_m3u8=$(curl -A "$USER_AGENT" -L -s "$api_url" \
-        | tr -d '\000' \
-        | tr -d '\r' \
-        | grep -oE 'https?://[^ ]+\.m3u8[^" ]*')
+    local api_text all_m3u8 chosen
 
-    # Debug: print semua hasil
-    echo "[DEBUG] Semua m3u8 ditemukan:"
-    echo "$all_m3u8"
+    api_text="$(curl -A "$USER_AGENT" -L -s "$api_url" | tr -d '\000' | tr -d '\r')"
+    [[ -z "$api_text" ]] && return 1
 
-    # Fokus ke itag=0 kalau ada
-    local chosen
-    chosen=$(echo "$all_m3u8" | grep 'itag=0' | tail -n 1)
-    if [[ -z "$chosen" ]]; then
-        chosen=$(echo "$all_m3u8" | tail -n 1)
-    fi
+    all_m3u8="$(echo "$api_text" | grep -aoE 'https?://[^"[:space:]]+\.m3u8[^"[:space:]]*')"
+    [[ -z "$all_m3u8" ]] && return 1
+
+    # DEBUG ke stderr (tidak masuk ke file output)
+    echo "[DEBUG] Semua m3u8 ditemukan:" >&2
+    echo "$all_m3u8" >&2
+
+    # fokus itag 0 (biasanya bentuk /itag/0/ bukan itag=0)
+    chosen="$(echo "$all_m3u8" | grep -m 1 '/itag/0/')"
+
+    # kalau gak ada /itag/0/ baru coba itag=0
+    [[ -z "$chosen" ]] && chosen="$(echo "$all_m3u8" | grep -m 1 'itag=0')"
+
+    # fallback: ambil yang terakhir
+    [[ -z "$chosen" ]] && chosen="$(echo "$all_m3u8" | tail -n 1)"
+
+    # stdout cuma URL saja
     echo "$chosen"
 }
 
