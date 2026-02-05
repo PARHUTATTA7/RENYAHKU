@@ -23,10 +23,6 @@ jobs:
           cp private/urls_live.txt $HOME/urls_live.txt
           cp private/base_api.txt $HOME/base_api.txt
 
-      # ⭐ WAJIB ADA — supaya bash2.sh bisa memilih kualitas HD via jq
-      - name: Install jq
-        run: sudo apt-get install -y jq
-
       - name: Jalankan script bash2.sh
         run: |
           chmod +x bash2.sh
