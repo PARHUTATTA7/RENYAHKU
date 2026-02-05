@@ -17,6 +17,12 @@ safe_filename() {
     echo "$1" | tr -cd '[:alnum:]_.-'
 }
 
+curl_get() {
+    curl -A "$USER_AGENT" -L -s --retry 2 --connect-timeout 10 --max-time 30 "$1" \
+        | tr -d '\000' \
+        | tr -d '\r'
+}
+
 # ================= LOAD API BASE =================
 
 load_api_base() {
@@ -26,7 +32,7 @@ load_api_base() {
 
     [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
 
-    echo "[+] API_BASE loaded"
+    echo "[+] API_BASE loaded (hidden)"
 }
 
 # ================= VIDEO ID EXTRACTOR =================
@@ -36,67 +42,81 @@ get_video_id() {
     local html vid
 
     if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     html="$(fetch_html "$url")"
 
-    vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | sed -n '1p')"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
-    vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | sed -n '1p')"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
-    vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | sed -n '1p')"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
     return 1
 }
 
-# ================= GET MASTER M3U8 FROM API =================
+# ================= GET MASTER PLAYLIST =================
 
-get_m3u8_from_api() {
+extract_first_m3u8_url() {
+    # ambil URL m3u8 pertama dari response API, tanpa head/pipe broken
+    echo "$1" | grep -aoE 'https?://[^"[:space:]]+\.m3u8[^"[:space:]]*' | sed -n '1p'
+}
+
+get_master_playlist() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
+    local api_text m3u8_url playlist
 
-    curl -A "$USER_AGENT" -L -s "$api_url" \
-        | tr -d '\000' \
-        | tr -d '\r' \
-        | awk '
-            {
-                while (match($0, /https?:\/\/[^"]+\.m3u8[^"]*/)) {
-                    url = substr($0, RSTART, RLENGTH)
-                    print url
-                    $0 = substr($0, RSTART + RLENGTH)
-                }
-            }
-        ' \
-        | awk '
-            /manifest\.googlevideo\.com/ && /hls_playlist/ { print; exit }
-            { if (!first) first=$0 }
-            END { if (first) print first }
-        '
+    api_text="$(curl_get "$api_url")"
+    [[ -z "$api_text" ]] && return 1
+
+    m3u8_url="$(extract_first_m3u8_url "$api_text")"
+    [[ -z "$m3u8_url" ]] && return 1
+
+    playlist="$(curl_get "$m3u8_url")"
+    [[ -z "$playlist" ]] && return 1
+
+    # kalau sudah master (punya stream-inf), simpan itu
+    if echo "$playlist" | grep -q "#EXT-X-STREAM-INF"; then
+        echo "$playlist"
+        return 0
+    fi
+
+    # kalau bukan master, coba cari "hls_variant" dari response API (kalau ada)
+    local variant_url
+    variant_url="$(echo "$api_text" | grep -aoE 'https?://[^"[:space:]]+hls_variant[^"[:space:]]+\.m3u8[^"[:space:]]*' | sed -n '1p')"
+
+    if [[ -n "$variant_url" ]]; then
+        playlist="$(curl_get "$variant_url")"
+        if echo "$playlist" | grep -q "#EXT-X-STREAM-INF"; then
+            echo "$playlist"
+            return 0
+        fi
+    fi
+
+    # fallback: simpan playlist biasa juga
+    echo "$playlist"
+    return 0
 }
 
 # ================= MAIN =================
@@ -123,13 +143,22 @@ while IFS= read -r line; do
 
     echo "[+] Video ID: $video_id"
 
-    m3u8="$(get_m3u8_from_api "$video_id")"
-    [[ -z "$m3u8" || "$m3u8" != *".m3u8"* ]] && { echo "[!] API gagal kasih master m3u8 untuk ID: $video_id"; continue; }
+    playlist_text="$(get_master_playlist "$video_id")"
+
+    if [[ -z "$playlist_text" ]]; then
+        echo "[!] API gagal kasih playlist untuk ID: $video_id"
+        continue
+    fi
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
-    echo "$m3u8" > "$output_file"
+    echo "$playlist_text" > "$output_file"
 
-    echo "[✓] Disimpan: $output_file"
+    if echo "$playlist_text" | grep -q "#EXT-X-STREAM-INF"; then
+        echo "[✓] Disimpan MASTER playlist: $output_file"
+    else
+        echo "[!] Disimpan playlist biasa (bukan master): $output_file"
+    fi
+
 done < "$URL_FILE"
 
 # ================= GIT =================
