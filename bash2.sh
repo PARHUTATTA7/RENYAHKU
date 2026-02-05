@@ -50,10 +50,19 @@ get_m3u8_from_api() {
     all_m3u8=$(curl -A "$USER_AGENT" -L -s "$api_url" \
         | tr -d '\000' \
         | tr -d '\r' \
-        | grep -oE 'https?://[^"]+\.m3u8[^"]*')
+        | grep -oE 'https?://[^ ]+\.m3u8[^" ]*')
 
-    # Fokus ke itag=0, ambil terakhir. Kalau tidak ada, ambil m3u8 terakhir umum.
-    echo "$all_m3u8" | grep 'itag=0' | tail -n 1 || echo "$all_m3u8" | tail -n 1
+    # Debug: print semua hasil
+    echo "[DEBUG] Semua m3u8 ditemukan:"
+    echo "$all_m3u8"
+
+    # Fokus ke itag=0 kalau ada
+    local chosen
+    chosen=$(echo "$all_m3u8" | grep 'itag=0' | tail -n 1)
+    if [[ -z "$chosen" ]]; then
+        chosen=$(echo "$all_m3u8" | tail -n 1)
+    fi
+    echo "$chosen"
 }
 
 # ================= MAIN =================
