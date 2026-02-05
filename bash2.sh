@@ -10,7 +10,9 @@ WORKDIR="$(pwd)"
 # ================= UTIL =================
 
 fetch_html() {
-    curl -A "$USER_AGENT" -L -s --cookie "$COOKIES_FILE" "$1"
+    curl -A "$USER_AGENT" -L -s --cookie "$COOKIES_FILE" "$1" \
+        | tr -d '\000' \
+        | tr -d '\r'
 }
 
 safe_filename() {
@@ -29,7 +31,6 @@ load_api_base() {
     [[ ! -f "$API_FILE" ]] && { echo "[!] File API tidak ditemukan: $API_FILE"; exit 1; }
 
     API_BASE="$(head -n 1 "$API_FILE" | tr -d '\r\n')"
-
     [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
 
     echo "[+] API_BASE loaded (hidden)"
@@ -75,27 +76,28 @@ get_video_id() {
     return 1
 }
 
-# ================= GET MASTER PLAYLIST =================
+# ================= GET M3U8 LINK FROM API =================
 
 get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
-    local api_text
+    local api_text url
 
-    api_text="$(curl -A "$USER_AGENT" -L -s "$api_url" | tr -d '\000' | tr -d '\r')"
-
+    api_text="$(curl_get "$api_url")"
     [[ -z "$api_text" ]] && return 1
 
-    # Prioritas ambil hls_variant (itag 0 biasanya)
-    local variant
-    variant="$(echo "$api_text" | grep -aoE 'https?://[^"[:space:]]+\.m3u8[^"[:space:]]*' | grep -m 1 "hls_variant")"
+    # ambil semua link m3u8
+    url="$(echo "$api_text" \
+        | grep -aoE 'https?://[^"[:space:]]+\.m3u8[^"[:space:]]*' \
+        | grep -m 1 "hls_variant")"
 
-    if [[ -n "$variant" ]]; then
-        echo "$variant"
+    # kalau ada hls_variant, pakai itu
+    if [[ -n "$url" ]]; then
+        echo "$url"
         return 0
     fi
 
-    # Kalau gak ada hls_variant, ambil link m3u8 pertama
+    # fallback: ambil m3u8 pertama
     echo "$api_text" | grep -aoE 'https?://[^"[:space:]]+\.m3u8[^"[:space:]]*' | sed -n '1p'
 }
 
@@ -123,22 +125,13 @@ while IFS= read -r line; do
 
     echo "[+] Video ID: $video_id"
 
-    playlist_text="$(get_master_playlist "$video_id")"
-
-    if [[ -z "$playlist_text" ]]; then
-        echo "[!] API gagal kasih playlist untuk ID: $video_id"
-        continue
-    fi
+    m3u8_url="$(get_m3u8_from_api "$video_id")"
+    [[ -z "$m3u8_url" ]] && { echo "[!] API gagal kasih m3u8 untuk ID: $video_id"; continue; }
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
-    echo "$playlist_text" > "$output_file"
+    echo "$m3u8_url" > "$output_file"
 
-    if echo "$playlist_text" | grep -q "#EXT-X-STREAM-INF"; then
-        echo "[✓] Disimpan MASTER playlist: $output_file"
-    else
-        echo "[!] Disimpan playlist biasa (bukan master): $output_file"
-    fi
-
+    echo "[✓] Disimpan: $output_file"
 done < "$URL_FILE"
 
 # ================= GIT =================
