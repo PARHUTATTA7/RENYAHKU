@@ -15,14 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install yt-dlp
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -U yt-dlp
-
-      - name: Add python user bin to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Ambil cookies & url dari repo privat
         run: |
           git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
