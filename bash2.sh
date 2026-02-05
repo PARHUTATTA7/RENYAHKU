@@ -33,42 +33,15 @@ load_api_base() {
 
 get_video_id() {
     local url="$1"
-    local html vid
+    local vid=""
 
-    # direct patterns
-    if [[ "$url" =~ (watch\?v=|v=)([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[2]}"
-        return 0
-    fi
+    command -v yt-dlp >/dev/null 2>&1 || return 1
 
-    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
-    fi
+    vid="$(yt-dlp --no-warnings --skip-download --get-id "$url" 2>/dev/null \
+        | tr -d '\r' \
+        | grep -E '^[A-Za-z0-9_-]{11}$' \
+        | head -n 1)"
 
-    if [[ "$url" =~ youtube\.com/(live|shorts|embed)/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[2]}"
-        return 0
-    fi
-
-    # fetch html
-    html="$(fetch_html "$url")"
-    [[ -z "$html" ]] && return 1
-
-    # canonical watch?v= (PALING AKURAT untuk @channel/live)
-    vid="$(echo "$html" | grep -aoP '<link rel="canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}(?=")' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
-    # og:url watch?v=
-    vid="$(echo "$html" | grep -aoP '<meta property="og:url" content="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}(?=")' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
-    # shortlinkUrl youtu.be/
-    vid="$(echo "$html" | grep -aoP '<link rel="shortlinkUrl" href="https://youtu\.be/\K[A-Za-z0-9_-]{11}(?=")' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
-    # meta itemprop identifier
-    vid="$(echo "$html" | grep -aoP '<meta itemprop="identifier" content="\K[A-Za-z0-9_-]{11}(?=")' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
     return 1
