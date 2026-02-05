@@ -83,11 +83,19 @@ get_m3u8_from_api() {
     curl -A "$USER_AGENT" -L -s "$api_url" \
         | tr -d '\000' \
         | tr -d '\r' \
-        | grep -oE 'https?://[^"]+\.m3u8[^"]*' \
         | awk '
-            /manifest\.googlevideo\.com/ || /hls_playlist/ { print; exit }
-            { first=$0 }
-            END { if (NR>0) print first }
+            {
+                while (match($0, /https?:\/\/[^"]+\.m3u8[^"]*/)) {
+                    url = substr($0, RSTART, RLENGTH)
+                    print url
+                    $0 = substr($0, RSTART + RLENGTH)
+                }
+            }
+        ' \
+        | awk '
+            /manifest\.googlevideo\.com/ && /hls_playlist/ { print; exit }
+            { if (!first) first=$0 }
+            END { if (first) print first }
         '
 }
 
