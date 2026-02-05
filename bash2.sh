@@ -35,55 +35,46 @@ get_video_id() {
     local url="$1"
     local html vid
 
-    # watch?v=ID
     if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # youtu.be/ID
     if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # youtube.com/live/ID
     if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # youtube.com/shorts/ID
     if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # youtube.com/embed/ID
     if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # fallback: parse HTML
     html="$(fetch_html "$url")"
 
-    # canonical
     vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
-    # videoId
     vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
-    # watch?v=
     vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
     return 1
 }
 
-# ================= GET M3U8 FROM API =================
+# ================= GET MASTER M3U8 FROM API =================
 
 get_m3u8_from_api() {
     local video_id="$1"
@@ -93,7 +84,11 @@ get_m3u8_from_api() {
         | tr -d '\000' \
         | tr -d '\r' \
         | grep -oE 'https?://[^"]+\.m3u8[^"]*' \
-        | head -n 1
+        | awk '
+            /manifest\.googlevideo\.com/ || /hls_playlist/ { print; exit }
+            { first=$0 }
+            END { if (NR>0) print first }
+        '
 }
 
 # ================= MAIN =================
@@ -113,22 +108,20 @@ while IFS= read -r line; do
     [[ -z "$name" || -z "$url" ]] && { echo "[!] Format tidak valid: $line"; continue; }
 
     safe="$(safe_filename "$name")"
-
     echo "[*] Memproses: $name"
 
     video_id="$(get_video_id "$url")"
-    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID: $url"; continue; }
+    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID"; continue; }
 
     echo "[+] Video ID: $video_id"
 
     m3u8="$(get_m3u8_from_api "$video_id")"
-    [[ -z "$m3u8" ]] && { echo "[!] API gagal kasih m3u8 untuk ID: $video_id"; continue; }
+    [[ -z "$m3u8" || "$m3u8" != *".m3u8"* ]] && { echo "[!] API gagal kasih master m3u8 untuk ID: $video_id"; continue; }
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
     echo "$m3u8" > "$output_file"
 
     echo "[✓] Disimpan: $output_file"
-
 done < "$URL_FILE"
 
 # ================= GIT =================
