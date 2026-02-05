@@ -33,14 +33,53 @@ load_api_base() {
 
 get_video_id() {
     local url="$1"
-    local vid=""
+    local html vid
 
-    vid="$(python3 -m yt_dlp --no-warnings --skip-download --get-id "$url" 2>/dev/null \
-        | tr -d '\r' \
-        | grep -E '^[A-Za-z0-9_-]{11}$' \
-        | head -n 1)"
+    # 1) watch?v=
+    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
 
+    # 2) youtu.be/ID
+    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # 3) /live/ID
+    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # 4) /shorts/ID
+    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # 5) /embed/ID
+    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    # 6) kalau @username/live atau URL aneh, parse HTML nya
+    html="$(fetch_html "$url")"
+
+    # cari dari canonical
+    vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+
+    # cari dari "videoId":"ID"
+    vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+
+    # cari dari watch?v=ID di html
+    vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+
     return 1
 }
 
