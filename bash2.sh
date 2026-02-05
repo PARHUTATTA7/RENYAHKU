@@ -9,24 +9,20 @@ WORKDIR="$(pwd)"
 
 # ================= UTIL =================
 
+fetch_html() {
+    curl -A "$USER_AGENT" -L -s --cookie "$COOKIES_FILE" "$1" \
+        | tr -d '\000' \
+        | tr -d '\r'
+}
+
 safe_filename() {
     echo "$1" | tr -cd '[:alnum:]_.-'
 }
 
 curl_get() {
-    curl -A "$USER_AGENT" -L -s \
-        --retry 1 \
-        --connect-timeout 5 \
-        --max-time 12 \
-        "$1" | tr -d '\000' | tr -d '\r'
-}
-
-fetch_html() {
-    curl -A "$USER_AGENT" -L -s \
-        --connect-timeout 5 \
-        --max-time 12 \
-        --cookie "$COOKIES_FILE" \
-        "$1" | tr -d '\000' | tr -d '\r'
+    curl -A "$USER_AGENT" -L -s --retry 2 --connect-timeout 10 --max-time 30 "$1" \
+        | tr -d '\000' \
+        | tr -d '\r'
 }
 
 # ================= LOAD API BASE =================
@@ -37,7 +33,7 @@ load_api_base() {
     API_BASE="$(head -n 1 "$API_FILE" | tr -d '\r\n')"
     [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
 
-    echo "[+] API_BASE loaded"
+    echo "[+] API_BASE loaded (hidden)"
 }
 
 # ================= VIDEO ID EXTRACTOR =================
@@ -49,20 +45,27 @@ get_video_id() {
     if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"; return 0
     fi
+
     if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"; return 0
     fi
+
     if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"; return 0
     fi
+
     if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"; return 0
     fi
+
     if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     html="$(fetch_html "$url")"
+
+    vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | sed -n '1p')"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
     vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | sed -n '1p')"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
@@ -73,7 +76,7 @@ get_video_id() {
     return 1
 }
 
-# ================= GET SINGLE M3U8 FROM API (FAST) =================
+# ================= GET M3U8 LINK FROM API =================
 
 get_m3u8_from_api() {
     local video_id="$1"
@@ -83,21 +86,27 @@ get_m3u8_from_api() {
     api_text="$(curl_get "$api_url")"
     [[ -z "$api_text" ]] && return 1
 
-    # kalau API sudah langsung ngasih URL doang
-    if echo "$api_text" | grep -q "^https://manifest\.googlevideo\.com/api/manifest/"; then
-        echo "$api_text" | head -n 1
+    # ambil semua link m3u8
+    local all_links
+    all_links="$(echo "$api_text" | grep -aoE 'https?://[^"[:space:]]+\.m3u8[^"[:space:]]*')"
+    [[ -z "$all_links" ]] && return 1
+
+    # 1) prioritas itag 0
+    url="$(echo "$all_links" | grep -m 1 '/itag/0/')"
+    if [[ -n "$url" ]]; then
+        echo "$url"
         return 0
     fi
 
-    # cari link hls_variant dulu
-    url="$(echo "$api_text" | grep -aoE 'https://manifest\.googlevideo\.com/api/manifest/[^"[:space:]]+' | grep -m 1 "hls_variant")"
-    [[ -n "$url" ]] && { echo "$url"; return 0; }
+    # 2) fallback hls_variant
+    url="$(echo "$all_links" | grep -m 1 'hls_variant')"
+    if [[ -n "$url" ]]; then
+        echo "$url"
+        return 0
+    fi
 
-    # fallback cari link googlevideo manifest pertama
-    url="$(echo "$api_text" | grep -aoE 'https://manifest\.googlevideo\.com/api/manifest/[^"[:space:]]+' | sed -n '1p')"
-    [[ -n "$url" ]] && { echo "$url"; return 0; }
-
-    return 1
+    # 3) fallback terakhir: ambil link m3u8 terakhir
+    echo "$all_links" | tail -n 1
 }
 
 # ================= MAIN =================
@@ -120,12 +129,12 @@ while IFS= read -r line; do
     echo "[*] Memproses: $name"
 
     video_id="$(get_video_id "$url")"
-    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID"; continue; }
+    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID: $url"; continue; }
 
     echo "[+] Video ID: $video_id"
 
     m3u8_url="$(get_m3u8_from_api "$video_id")"
-    [[ -z "$m3u8_url" ]] && { echo "[!] API gagal kasih manifest untuk ID: $video_id"; continue; }
+    [[ -z "$m3u8_url" ]] && { echo "[!] API gagal kasih m3u8 untuk ID: $video_id"; continue; }
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
     echo "$m3u8_url" > "$output_file"
