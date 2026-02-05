@@ -9,131 +9,145 @@ WORKDIR="$(pwd)"
 
 # ================= UTIL =================
 
+safe_filename() {
+    echo "$1" | tr -cd '[:alnum:]_.-'
+}
+
 curl_get() {
-    curl -A "$USER_AGENT" -L -s --retry 2 --connect-timeout 5 --max-time 15 "$@" \
-        | tr -d '\000' \
-        | tr -d '\r'
+    curl -A "$USER_AGENT" -L -s \
+        --retry 1 \
+        --connect-timeout 5 \
+        --max-time 12 \
+        "$1" | tr -d '\000' | tr -d '\r'
+}
+
+fetch_html() {
+    curl -A "$USER_AGENT" -L -s \
+        --connect-timeout 5 \
+        --max-time 12 \
+        --cookie "$COOKIES_FILE" \
+        "$1" | tr -d '\000' | tr -d '\r'
 }
 
 # ================= LOAD API BASE =================
 
 load_api_base() {
     [[ ! -f "$API_FILE" ]] && { echo "[!] File API tidak ditemukan: $API_FILE"; exit 1; }
+
     API_BASE="$(head -n 1 "$API_FILE" | tr -d '\r\n')"
     [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
+
     echo "[+] API_BASE loaded"
 }
 
-# ================= FAST VIDEO ID EXTRACTOR =================
+# ================= VIDEO ID EXTRACTOR =================
 
 get_video_id() {
     local url="$1"
-    
-    # Regex langsung tanpa cek HTML untuk URL umum
+    local html vid
+
     if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-    elif [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-    elif [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-    elif [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-    elif [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-    else
-        # Cepat ambil hanya bagian akhir URL yang mungkin ID
-        echo "$url" | grep -oE '[A-Za-z0-9_-]{11}' | head -1
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
+    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"; return 0
+    fi
+    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"; return 0
+    fi
+    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"; return 0
+    fi
+    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"; return 0
+    fi
+
+    html="$(fetch_html "$url")"
+
+    vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | sed -n '1p')"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+
+    vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | sed -n '1p')"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+
+    return 1
 }
 
-# ================= GET SINGLE M3U8 LINK FROM API =================
+# ================= GET SINGLE M3U8 FROM API (FAST) =================
 
-get_single_m3u8() {
+get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
-    
-    # Langsung grep link m3u8 dengan pattern hls_variant (tanpa parsing JSON kompleks)
-    local m3u8_url
-    m3u8_url="$(curl_get "$api_url" | grep -o 'https://manifest.googlevideo.com/api/manifest/hls_variant[^"]*' | head -1)"
-    
-    if [[ -n "$m3u8_url" ]]; then
-        echo "$m3u8_url"
+    local api_text url
+
+    api_text="$(curl_get "$api_url")"
+    [[ -z "$api_text" ]] && return 1
+
+    # kalau API sudah langsung ngasih URL doang
+    if echo "$api_text" | grep -q "^https://manifest\.googlevideo\.com/api/manifest/"; then
+        echo "$api_text" | head -n 1
         return 0
     fi
-    
-    # Fallback cepat untuk m3u8 lain
-    curl_get "$api_url" | grep -o 'https://[^"]*\.m3u8[^"]*' | head -1
+
+    # cari link hls_variant dulu
+    url="$(echo "$api_text" | grep -aoE 'https://manifest\.googlevideo\.com/api/manifest/[^"[:space:]]+' | grep -m 1 "hls_variant")"
+    [[ -n "$url" ]] && { echo "$url"; return 0; }
+
+    # fallback cari link googlevideo manifest pertama
+    url="$(echo "$api_text" | grep -aoE 'https://manifest\.googlevideo\.com/api/manifest/[^"[:space:]]+' | sed -n '1p')"
+    [[ -n "$url" ]] && { echo "$url"; return 0; }
+
+    return 1
 }
 
-# ================= MAIN PROCESSING =================
+# ================= MAIN =================
 
 [[ ! -f "$URL_FILE" ]] && { echo "[!] File $URL_FILE tidak ditemukan"; exit 1; }
 command -v curl >/dev/null || { echo "[!] curl tidak ditemukan"; exit 1; }
 
 load_api_base
 
-processed_count=0
-
-# Gunakan while loop yang lebih efisien
-while IFS= read -r line || [[ -n "$line" ]]; do
-    # Skip kosong dan komentar
-    [[ -z "${line// }" ]] && continue
+while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
-    
-    # Parsing sederhana: ambil nama (kata pertama) dan URL (sisanya)
-    name="${line%% *}"
-    url="${line#* }"
-    
-    [[ -z "$name" || -z "$url" ]] && continue
-    
-    echo "[*] Processing: $name"
-    
-    # Ambil video ID dengan cepat
+
+    name="$(echo "$line" | awk '{print $1}')"
+    url="$(echo "$line" | sed 's/^[[:space:]]*[^[:space:]]*[[:space:]]*//')"
+
+    [[ -z "$name" || -z "$url" ]] && { echo "[!] Format tidak valid: $line"; continue; }
+
+    safe="$(safe_filename "$name")"
+    echo "[*] Memproses: $name"
+
     video_id="$(get_video_id "$url")"
-    if [[ -z "$video_id" ]]; then
-        echo "[!] Failed to get video ID from: $url"
-        continue
-    fi
-    
+    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID"; continue; }
+
     echo "[+] Video ID: $video_id"
-    
-    # Ambil single m3u8 link langsung
-    m3u8_url="$(get_single_m3u8 "$video_id")"
-    if [[ -z "$m3u8_url" ]]; then
-        echo "[!] No m3u8 link found for: $video_id"
-        continue
-    fi
-    
-    # Simpan langsung ke file
-    echo "$m3u8_url" > "${WORKDIR}/${name}.m3u8.txt"
-    
-    echo "[✓] Saved: ${name}.m3u8.txt"
-    echo "     URL: $(echo "$m3u8_url" | cut -c1-80)..."
-    
-    ((processed_count++))
-    
-    # Small delay to prevent rate limiting (optional)
-    sleep 0.5
-    
+
+    m3u8_url="$(get_m3u8_from_api "$video_id")"
+    [[ -z "$m3u8_url" ]] && { echo "[!] API gagal kasih manifest untuk ID: $video_id"; continue; }
+
+    output_file="$WORKDIR/${safe}.m3u8.txt"
+    echo "$m3u8_url" > "$output_file"
+
+    echo "[✓] Disimpan: $output_file"
 done < "$URL_FILE"
 
-# ================= GIT UPDATE =================
+# ================= GIT =================
 
-echo "[+] Processed $processed_count URLs"
+git config user.email "actions@github.com"
+git config user.name "GitHub Actions"
 
-if [[ $processed_count -gt 0 ]]; then
-    git config user.email "actions@github.com"
-    git config user.name "GitHub Actions"
-    
-    git add *.m3u8.txt 2>/dev/null
-    
-    if ! git diff --cached --quiet; then
-        git commit -m "Auto update m3u8 links - $(date '+%Y-%m-%d %H:%M:%S')"
-        git push origin master --force-with-lease
-        echo "[✓] Successfully pushed to repository"
-    else
-        echo "[i] No changes to commit"
-    fi
+git add .
+
+if ! git diff --cached --quiet; then
+    git commit -m "Update dari $REPO_NAME/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+    git fetch origin master
+    git merge --strategy-option=theirs origin/master 2>/dev/null || true
+    git push origin master --force-with-lease
+    echo "[✓] Berhasil push ke repository"
+else
+    echo "[i] Tidak ada perubahan"
 fi
 
-echo "[✓] Script completed in $(date +%s) seconds"
+echo "[✓] Script selesai"
