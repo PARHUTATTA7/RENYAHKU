@@ -35,27 +35,12 @@ get_video_id() {
     local url="$1"
     local html vid
 
-    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
+    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
 
-    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
-
-    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
-
-    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
-
-    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
-
-    # fallback parse HTML
     html="$(fetch_html "$url")"
 
     vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
@@ -70,34 +55,40 @@ get_video_id() {
     return 1
 }
 
-# ================= GET M3U8 FROM API =================
+# ================= GENERATE MASTER M3U8 =================
 
-get_m3u8_from_api() {
-    local video_id="$1"
-    local api_url="${API_BASE}${video_id}"
+generate_master_m3u8() {
+    local name="$1"
+    local content="$2"
+    local output_file="$3"
 
-    local res
-    res=$(curl -A "$USER_AGENT" -L -s "$api_url" \
-        | tr -d '\000' \
-        | tr -d '\r' \
-        | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    echo "#EXTM3U" > "$output_file"
 
-    # DEBUG (optional)
-    # echo "[DEBUG] API Response: $res"
+    # Ambil semua URL + sort berdasarkan itag tertinggi
+    echo "$content" \
+        | grep -oE 'https://manifest\.googlevideo\.com[^[:space:]]+' \
+        | awk -F'itag=' '{print $2 "|" $0}' \
+        | sort -t'|' -k1 -nr \
+        | cut -d'|' -f2 \
+        | uniq \
+        | while read -r url; do
 
-    # ✅ Jika API langsung kasih URL googlevideo
-    if [[ "$res" =~ ^https://manifest\.googlevideo\.com/.*\.m3u8 ]]; then
-        echo "$res"
-        return 0
-    fi
+        itag=$(echo "$url" | grep -o 'itag=[0-9]*' | cut -d= -f2)
 
-    # ✅ fallback kalau API kadang balikin playlist / teks campuran
-    local fallback
-    fallback=$(echo "$res" | grep -oE 'https://manifest\.googlevideo\.com[^[:space:]]+')
+        case "$itag" in
+            96) res="1920x1080"; bw="5000000"; label="1080p";;
+            95) res="1280x720";  bw="3000000"; label="720p";;
+            94) res="854x480";   bw="1500000"; label="480p";;
+            93) res="640x360";   bw="800000";  label="360p";;
+            92) res="426x240";   bw="400000";  label="240p";;
+            91) res="256x144";   bw="200000";  label="144p";;
+            *) continue;;
+        esac
 
-    [[ -n "$fallback" ]] && { echo "$fallback"; return 0; }
+        echo "#EXT-X-STREAM-INF:BANDWIDTH=$bw,RESOLUTION=$res,NAME=\"$label\"" >> "$output_file"
+        echo "$url" >> "$output_file"
 
-    return 1
+    done
 }
 
 # ================= MAIN =================
@@ -125,13 +116,15 @@ while IFS= read -r line; do
 
     echo "[+] Video ID: $video_id"
 
-    m3u8="$(get_m3u8_from_api "$video_id")"
-    [[ -z "$m3u8" ]] && { echo "[!] API gagal kasih stream untuk ID: $video_id"; continue; }
+    api_response="$(curl -A "$USER_AGENT" -L -s "${API_BASE}${video_id}" | tr -d '\000' | tr -d '\r')"
 
-    output_file="$WORKDIR/${safe}.m3u8.txt"
-    echo "$m3u8" > "$output_file"
+    [[ -z "$api_response" ]] && { echo "[!] API kosong untuk ID: $video_id"; continue; }
 
-    echo "[✓] Disimpan: $output_file"
+    output_file="$WORKDIR/${safe}.m3u8"
+
+    generate_master_m3u8 "$name" "$api_response" "$output_file"
+
+    echo "[✓] Master M3U8 dibuat: $output_file"
 
 done < "$URL_FILE"
 
