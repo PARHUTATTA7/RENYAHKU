@@ -6,143 +6,167 @@ COOKIES_FILE="$HOME/cookies.txt"
 URL_FILE="$HOME/urls_live.txt"
 API_FILE="$HOME/base_api.txt"
 WORKDIR="$(pwd)"
+OUTPUT_FILE="$WORKDIR/result.txt"  # File untuk menyimpan semua URL
 
 # ================= UTIL =================
-
 fetch_html() {
     curl -A "$USER_AGENT" -L -s --cookie "$COOKIES_FILE" "$1"
 }
 
-safe_filename() {
-    echo "$1" | tr -cd '[:alnum:]_.-'
-}
-
 # ================= LOAD API BASE =================
-
 load_api_base() {
     [[ ! -f "$API_FILE" ]] && { echo "[!] File API tidak ditemukan: $API_FILE"; exit 1; }
-
     API_BASE="$(head -n 1 "$API_FILE" | tr -d '\r\n')"
-
     [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
-
-    echo "[+] API_BASE loaded: $API_BASE"
+    echo "[+] API_BASE loaded"
 }
 
 # ================= VIDEO ID EXTRACTOR =================
-
 get_video_id() {
     local url="$1"
     local html vid
-
-    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
-    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
-    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
-    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
-    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
-
+    
+    # 1) watch?v=
+    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # 2) youtu.be/ID
+    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # 3) /live/ID
+    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # 4) /shorts/ID
+    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # 5) /embed/ID
+    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
+    
+    # 6) kalau @username/live atau URL aneh, parse HTML nya
     html="$(fetch_html "$url")"
-
+    
+    # cari dari canonical
     vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
+    
+    # cari dari "videoId":"ID"
     vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
+    
+    # cari dari watch?v=ID di html
     vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
-
+    
     return 1
 }
 
-# ================= GENERATE MASTER M3U8 =================
-
-generate_master_m3u8() {
-    local name="$1"
-    local content="$2"
-    local output_file="$3"
-
-    echo "#EXTM3U" > "$output_file"
-
-    # Ambil semua URL + sort berdasarkan itag tertinggi
-    echo "$content" \
-        | grep -oE 'https://manifest\.googlevideo\.com[^[:space:]]+' \
-        | awk -F'itag=' '{print $2 "|" $0}' \
-        | sort -t'|' -k1 -nr \
-        | cut -d'|' -f2 \
-        | uniq \
-        | while read -r url; do
-
-        itag=$(echo "$url" | grep -o 'itag=[0-9]*' | cut -d= -f2)
-
-        case "$itag" in
-            96) res="1920x1080"; bw="5000000"; label="1080p";;
-            95) res="1280x720";  bw="3000000"; label="720p";;
-            94) res="854x480";   bw="1500000"; label="480p";;
-            93) res="640x360";   bw="800000";  label="360p";;
-            92) res="426x240";   bw="400000";  label="240p";;
-            91) res="256x144";   bw="200000";  label="144p";;
-            *) continue;;
-        esac
-
-        echo "#EXT-X-STREAM-INF:BANDWIDTH=$bw,RESOLUTION=$res,NAME=\"$label\"" >> "$output_file"
-        echo "$url" >> "$output_file"
-
-    done
+# ================= GET M3U8 FROM API =================
+get_m3u8_from_api() {
+    local video_id="$1"
+    local api_url="${API_BASE}${video_id}"
+    local response
+    
+    response=$(curl -A "$USER_AGENT" -L -s "$api_url" | tr -d '\000' | tr -d '\r')
+    
+    # Ambil URL m3u8 langsung
+    echo "$response" | grep -oE 'https?://[^"]+\.m3u8[^"]*' | head -n 1
 }
 
 # ================= MAIN =================
-
-[[ ! -f "$URL_FILE" ]] && { echo "[!] File $URL_FILE tidak ditemukan"; exit 1; }
-command -v curl >/dev/null || { echo "[!] curl tidak ditemukan"; exit 1; }
-
-load_api_base
-
-while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    [[ "$line" =~ ^[[:space:]]*# ]] && continue
-
-    name="$(echo "$line" | awk '{print $1}')"
-    url="$(echo "$line" | sed 's/^[[:space:]]*[^[:space:]]*[[:space:]]*//')"
-
-    [[ -z "$name" || -z "$url" ]] && { echo "[!] Format tidak valid: $line"; continue; }
-
-    safe="$(safe_filename "$name")"
-
-    echo "[*] Memproses: $name"
-
-    video_id="$(get_video_id "$url")"
-    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID: $url"; continue; }
-
-    echo "[+] Video ID: $video_id"
-
-    api_response="$(curl -A "$USER_AGENT" -L -s "${API_BASE}${video_id}" | tr -d '\000' | tr -d '\r')"
-
-    [[ -z "$api_response" ]] && { echo "[!] API kosong untuk ID: $video_id"; continue; }
-
-    output_file="$WORKDIR/${safe}.m3u8"
-
-    generate_master_m3u8 "$name" "$api_response" "$output_file"
-
-    echo "[✓] Master M3U8 dibuat: $output_file"
-
-done < "$URL_FILE"
+main() {
+    [[ ! -f "$URL_FILE" ]] && { echo "[!] File $URL_FILE tidak ditemukan"; exit 1; }
+    command -v curl >/dev/null || { echo "[!] curl tidak ditemukan"; exit 1; }
+    
+    load_api_base
+    
+    # Kosongkan file output
+    > "$OUTPUT_FILE"
+    
+    local total_urls=0
+    local success_urls=0
+    
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        
+        name="$(echo "$line" | awk '{print $1}')"
+        url="$(echo "$line" | sed 's/^[[:space:]]*[^[:space:]]*[[:space:]]*//')"
+        
+        [[ -z "$name" || -z "$url" ]] && { echo "[!] Format tidak valid: $line"; continue; }
+        
+        total_urls=$((total_urls + 1))
+        echo "[*] Memproses: $name"
+        
+        video_id="$(get_video_id "$url")"
+        [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID: $url"; continue; }
+        
+        echo "[+] Video ID: $video_id"
+        
+        m3u8="$(get_m3u8_from_api "$video_id")"
+        [[ -z "$m3u8" ]] && { echo "[!] API gagal kasih m3u8 untuk ID: $video_id"; continue; }
+        
+        # Tampilkan URL ke terminal
+        echo "[✓] M3U8 URL: $m3u8"
+        
+        # Simpan URL ke file output
+        echo "$m3u8" >> "$OUTPUT_FILE"
+        
+        success_urls=$((success_urls + 1))
+        echo "---"
+        
+    done < "$URL_FILE"
+    
+    echo ""
+    echo "======================= SUMMARY ======================="
+    echo "Total URL diproses: $total_urls"
+    echo "Berhasil: $success_urls"
+    echo "Gagal: $((total_urls - success_urls))"
+    echo "Semua URL tersimpan di: $OUTPUT_FILE"
+    echo "======================================================="
+    
+    # Tampilkan semua URL yang berhasil
+    if [[ $success_urls -gt 0 ]]; then
+        echo ""
+        echo "Daftar URL M3U8 yang berhasil didapat:"
+        cat "$OUTPUT_FILE"
+    fi
+}
 
 # ================= GIT =================
+git_push() {
+    git config user.email "actions@github.com"
+    git config user.name "GitHub Actions"
+    git add .
+    
+    if ! git diff --cached --quiet; then
+        git commit -m "Update dari $REPO_NAME/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')"
+        git fetch origin master
+        git merge --strategy-option=theirs origin/master 2>/dev/null || true
+        git push origin master --force-with-lease
+        echo "[✓] Berhasil push ke repository"
+    else
+        echo "[i] Tidak ada perubahan"
+    fi
+}
 
-git config user.email "actions@github.com"
-git config user.name "GitHub Actions"
+# Jalankan main function
+main
 
-git add .
-
-if ! git diff --cached --quiet; then
-    git commit -m "Update dari $REPO_NAME/bash2.sh - $(date '+%Y-%m-%d %H:%M:%S')"
-    git fetch origin master
-    git merge --strategy-option=theirs origin/master 2>/dev/null || true
-    git push origin master --force-with-lease
-    echo "[✓] Berhasil push ke repository"
-else
-    echo "[i] Tidak ada perubahan"
-fi
+# Push ke git jika diperlukan (komentar jika tidak ingin push)
+# git_push
 
 echo "[✓] Script selesai"
