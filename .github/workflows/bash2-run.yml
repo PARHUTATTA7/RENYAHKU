@@ -27,7 +27,7 @@ jobs:
           chmod +x bash2.sh
           ./bash2.sh
 
-      - name: Commit hasil jika ada perubahan
+      - name: Commit & Push (ANTI CONFLICT)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -39,7 +39,26 @@ jobs:
 
           if git diff --cached --quiet; then
             echo "Tidak ada perubahan"
-          else
-            git commit -m "Update hasil bash2.sh $(date '+%Y-%m-%d %H:%M:%S')"
-            git push origin HEAD:master
+            exit 0
           fi
+
+          git commit -m "Update hasil bash2.sh $(date '+%Y-%m-%d %H:%M:%S')"
+
+          # 🔥 LOOP RETRY (ANTI FAIL)
+          for i in 1 2 3; do
+            echo "Push attempt $i..."
+
+            # sync dulu
+            git pull --rebase origin master || true
+
+            if git push origin HEAD:master; then
+              echo "Push berhasil"
+              exit 0
+            fi
+
+            echo "Push gagal, retry..."
+            sleep 5
+          done
+
+          echo "Push gagal setelah 3x percobaan"
+          exit 1
