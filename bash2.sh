@@ -26,7 +26,7 @@ load_api_base() {
 
     [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
 
-    echo "[+] API_BASE loaded"
+    echo "[+] API_BASE loaded: $API_BASE"
 }
 
 # ================= VIDEO ID EXTRACTOR =================
@@ -35,48 +35,35 @@ get_video_id() {
     local url="$1"
     local html vid
 
-    # 1) watch?v=
     if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
-    # 2) youtu.be/ID
     if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
-    # 3) /live/ID
     if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
-    # 4) /shorts/ID
     if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
-    # 5) /embed/ID
     if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"
-        return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
-    # 6) kalau @username/live atau URL aneh, parse HTML nya
+    # fallback parse HTML
     html="$(fetch_html "$url")"
 
-    # cari dari canonical
     vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
-    # cari dari "videoId":"ID"
     vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
-    # cari dari watch?v=ID di html
     vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
     [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
@@ -89,11 +76,28 @@ get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
 
-    curl -A "$USER_AGENT" -L -s "$api_url" \
+    local res
+    res=$(curl -A "$USER_AGENT" -L -s "$api_url" \
         | tr -d '\000' \
         | tr -d '\r' \
-        | grep -oE 'https?://[^"]+\.m3u8[^"]*' \
-        | tail -n 1
+        | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+    # DEBUG (optional)
+    # echo "[DEBUG] API Response: $res"
+
+    # ✅ Jika API langsung kasih URL googlevideo
+    if [[ "$res" =~ ^https://manifest\.googlevideo\.com/.*\.m3u8 ]]; then
+        echo "$res"
+        return 0
+    fi
+
+    # ✅ fallback kalau API kadang balikin playlist / teks campuran
+    local fallback
+    fallback=$(echo "$res" | grep -oE 'https://manifest\.googlevideo\.com[^[:space:]]+')
+
+    [[ -n "$fallback" ]] && { echo "$fallback"; return 0; }
+
+    return 1
 }
 
 # ================= MAIN =================
@@ -122,7 +126,7 @@ while IFS= read -r line; do
     echo "[+] Video ID: $video_id"
 
     m3u8="$(get_m3u8_from_api "$video_id")"
-    [[ -z "$m3u8" ]] && { echo "[!] API gagal kasih m3u8 untuk ID: $video_id"; continue; }
+    [[ -z "$m3u8" ]] && { echo "[!] API gagal kasih stream untuk ID: $video_id"; continue; }
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
     echo "$m3u8" > "$output_file"
