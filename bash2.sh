@@ -17,10 +17,6 @@ safe_filename() {
     echo "$1" | tr -cd '[:alnum:]_.-'
 }
 
-log() {
-    echo "$1" >&2
-}
-
 # ================= MASK DOMAIN API =================
 
 mask_api_domain() {
@@ -31,51 +27,52 @@ mask_api_domain() {
 # ================= LOAD API BASE =================
 
 load_api_base() {
-    [[ ! -f "$API_FILE" ]] && { log "[!] File API tidak ditemukan: $API_FILE"; exit 1; }
+    [[ ! -f "$API_FILE" ]] && { echo "[!] File API tidak ditemukan: $API_FILE"; exit 1; }
 
     API_BASE="$(head -n 1 "$API_FILE" | tr -d '\r\n')"
 
-    [[ -z "$API_BASE" ]] && { log "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
+    [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
 
-    log "[+] API_BASE loaded"
+    echo "[+] API_BASE loaded: $API_BASE"
 }
 
-# ================= VIDEO ID =================
+# ================= VIDEO ID EXTRACTOR =================
 
 get_video_id() {
     local url="$1"
     local html vid
 
     if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
-        printf "%s" "${BASH_REMATCH[1]}"; return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
-        printf "%s" "${BASH_REMATCH[1]}"; return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
-        printf "%s" "${BASH_REMATCH[1]}"; return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
-        printf "%s" "${BASH_REMATCH[1]}"; return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
-        printf "%s" "${BASH_REMATCH[1]}"; return 0
+        echo "${BASH_REMATCH[1]}"; return 0
     fi
 
+    # fallback parse HTML
     html="$(fetch_html "$url")"
 
-    vid="$(echo "$html" | grep -oPm1 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}')"
-    [[ -n "$vid" ]] && { printf "%s" "$vid"; return 0; }
+    vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
-    vid="$(echo "$html" | grep -oPm1 '"videoId":"\K[A-Za-z0-9_-]{11}')"
-    [[ -n "$vid" ]] && { printf "%s" "$vid"; return 0; }
+    vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
-    vid="$(echo "$html" | grep -oPm1 'watch\?v=\K[A-Za-z0-9_-]{11}')"
-    [[ -n "$vid" ]] && { printf "%s" "$vid"; return 0; }
+    vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
+    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
 
     return 1
 }
