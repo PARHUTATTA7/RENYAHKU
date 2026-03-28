@@ -1,1 +1,3 @@
-[DEBUG] Semua m3u8 ditemukan:
+[*] Request API: https://ytdokandado.hiandoparhuta.workers.dev/?id=Zu-iklH8iII
+[DEBUG] Final URL: https://qtv.my.id/ytlive/index.m3u8?id=Zu-iklH8iII&type=hls
+[!] Gagal mendapatkan redirect URL
