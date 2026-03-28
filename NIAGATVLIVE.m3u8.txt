@@ -1,3 +1,3 @@
 [*] Request API: /?id=maN59GOfp2U
 [DEBUG] Final URL: /ytlive/index.m3u8?id=maN59GOfp2U&type=hls
-[!] Gagal mendapatkan redirect URL
+https://qtv.my.id/ytlive/index.m3u8?id=maN59GOfp2U&type=hls
