@@ -92,7 +92,6 @@ get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
 
-    # Log tanpa domain
     log "[*] Request API: $(mask_api_domain "$api_url")"
 
     local final_url
@@ -107,7 +106,8 @@ get_m3u8_from_api() {
 
     log "[DEBUG] Final URL: $(mask_domain "$final_url")"
 
-    if [[ "$final_url" =~ ^https://manifest\.googlevideo\.com/.*\.m3u8 ]]; then
+    # Jika redirect menghasilkan m3u8 apapun → anggap sukses
+    if [[ "$final_url" == *.m3u8* ]]; then
         printf "%s" "$final_url"
         return 0
     fi
