@@ -1,3 +1,1 @@
-[*] Request API: /?id=AhCiCiMKZfw
-[DEBUG] Final URL: /ytlive/index.m3u8?id=AhCiCiMKZfw&type=hls
 https://qtv.my.id/ytlive/index.m3u8?id=AhCiCiMKZfw&type=hls
