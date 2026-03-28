@@ -1,3 +1,1 @@
-[*] Request API: https://ytdokandado.hiandoparhuta.workers.dev/?id=XzR0qY2vdGg
-[DEBUG] Final URL: https://qtv.my.id/ytlive/index.m3u8?id=XzR0qY2vdGg&type=hls
-[!] Gagal mendapatkan redirect URL
+
