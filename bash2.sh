@@ -17,16 +17,20 @@ safe_filename() {
     echo "$1" | tr -cd '[:alnum:]_.-'
 }
 
+log() {
+    echo "$1" >&2
+}
+
 # ================= LOAD API BASE =================
 
 load_api_base() {
-    [[ ! -f "$API_FILE" ]] && { echo "[!] File API tidak ditemukan: $API_FILE"; exit 1; }
+    [[ ! -f "$API_FILE" ]] && { log "[!] File API tidak ditemukan: $API_FILE"; exit 1; }
 
     API_BASE="$(head -n 1 "$API_FILE" | tr -d '\r\n')"
 
-    [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
+    [[ -z "$API_BASE" ]] && { log "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
 
-    echo "[+] API_BASE loaded: $API_BASE"
+    log "[+] API_BASE loaded: $API_BASE"
 }
 
 # ================= VIDEO ID EXTRACTOR =================
@@ -36,73 +40,73 @@ get_video_id() {
     local html vid
 
     if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
+        printf "%s" "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
+        printf "%s" "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
+        printf "%s" "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
+        printf "%s" "${BASH_REMATCH[1]}"; return 0
     fi
 
     if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
+        printf "%s" "${BASH_REMATCH[1]}"; return 0
     fi
 
     # fallback parse HTML
     html="$(fetch_html "$url")"
 
     vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+    [[ -n "$vid" ]] && { printf "%s" "$vid"; return 0; }
 
     vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+    [[ -n "$vid" ]] && { printf "%s" "$vid"; return 0; }
 
     vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+    [[ -n "$vid" ]] && { printf "%s" "$vid"; return 0; }
 
     return 1
 }
 
-# ================= GET M3U8 FROM API (FIX TOTAL) =================
+# ================= GET M3U8 FROM API (FIX FINAL) =================
 
 get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
 
-    echo "[*] Request API: $api_url"
+    log "[*] Request API: $api_url"
 
-    # ✅ ambil URL hasil redirect FINAL (INI KUNCI FIX)
     local final_url
     final_url=$(curl -A "$USER_AGENT" \
         -H "Accept: */*" \
         -H "Connection: keep-alive" \
+        --max-redirs 10 \
+        --connect-timeout 10 \
         -L -s -o /dev/null \
         -w '%{url_effective}' \
         "$api_url")
 
-    echo "[DEBUG] Final URL: $final_url"
+    log "[DEBUG] Final URL: $final_url"
 
-    # validasi harus googlevideo m3u8
     if [[ "$final_url" =~ ^https://manifest\.googlevideo\.com/.*\.m3u8 ]]; then
-        echo "$final_url"
+        printf "%s" "$final_url"
         return 0
     fi
 
-    echo "[!] Gagal mendapatkan redirect URL"
+    log "[!] Gagal mendapatkan redirect URL"
     return 1
 }
 
 # ================= MAIN =================
 
-[[ ! -f "$URL_FILE" ]] && { echo "[!] File $URL_FILE tidak ditemukan"; exit 1; }
-command -v curl >/dev/null || { echo "[!] curl tidak ditemukan"; exit 1; }
+[[ ! -f "$URL_FILE" ]] && { log "[!] File $URL_FILE tidak ditemukan"; exit 1; }
+command -v curl >/dev/null || { log "[!] curl tidak ditemukan"; exit 1; }
 
 load_api_base
 
@@ -113,25 +117,27 @@ while IFS= read -r line; do
     name="$(echo "$line" | awk '{print $1}')"
     url="$(echo "$line" | sed 's/^[[:space:]]*[^[:space:]]*[[:space:]]*//')"
 
-    [[ -z "$name" || -z "$url" ]] && { echo "[!] Format tidak valid: $line"; continue; }
+    [[ -z "$name" || -z "$url" ]] && { log "[!] Format tidak valid: $line"; continue; }
 
     safe="$(safe_filename "$name")"
 
-    echo "========================================"
-    echo "[*] Memproses: $name"
+    log "========================================"
+    log "[*] Memproses: $name"
 
     video_id="$(get_video_id "$url")"
-    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID: $url"; continue; }
+    [[ -z "$video_id" ]] && { log "[!] Gagal resolve video ID: $url"; continue; }
 
-    echo "[+] Video ID: $video_id"
+    log "[+] Video ID: $video_id"
 
     m3u8="$(get_m3u8_from_api "$video_id")"
-    [[ -z "$m3u8" ]] && { echo "[!] API gagal kasih stream untuk ID: $video_id"; continue; }
+    [[ -z "$m3u8" ]] && { log "[!] API gagal kasih stream untuk ID: $video_id"; continue; }
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
-    echo "$m3u8" > "$output_file"
 
-    echo "[✓] Disimpan: $output_file"
+    # ✅ CLEAN OUTPUT (1 baris saja)
+    printf "%s\n" "$m3u8" > "$output_file"
+
+    log "[✓] Disimpan: $output_file"
 
 done < "$URL_FILE"
 
@@ -147,9 +153,9 @@ if ! git diff --cached --quiet; then
     git fetch origin master
     git merge --strategy-option=theirs origin/master 2>/dev/null || true
     git push origin master --force-with-lease
-    echo "[✓] Berhasil push ke repository"
+    log "[✓] Berhasil push ke repository"
 else
-    echo "[i] Tidak ada perubahan"
+    log "[i] Tidak ada perubahan"
 fi
 
-echo "[✓] Script selesai"
+log "[✓] Script selesai"
