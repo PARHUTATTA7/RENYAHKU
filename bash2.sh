@@ -21,22 +21,11 @@ log() {
     echo "$1" >&2
 }
 
-# ================= MASKING =================
+# ================= MASK DOMAIN API =================
 
-mask_id() {
-    echo "***********"
-}
-
-mask_url() {
-    echo "$1" | sed -E 's/(id=)[^&]+/\1***********/g'
-}
-
-mask_final_url() {
-    echo "$1" \
-        | sed -E 's/(id=)[^&]+/\1***********/g' \
-        | sed -E 's/(sig=)[^\/]+/\1***/g' \
-        | sed -E 's/(expire=)[0-9]+/\1***/g' \
-        | sed -E 's/(ip=)[0-9\.]+/\1***/g'
+mask_api_domain() {
+    # sensor hanya domain
+    echo "$1" | sed -E 's#(https?://)[^/]+#\1*******#'
 }
 
 # ================= LOAD API BASE =================
@@ -51,7 +40,7 @@ load_api_base() {
     log "[+] API_BASE loaded"
 }
 
-# ================= VIDEO ID EXTRACTOR =================
+# ================= VIDEO ID =================
 
 get_video_id() {
     local url="$1"
@@ -97,7 +86,8 @@ get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
 
-    log "[*] Request API: $(mask_url "$api_url")"
+    # ✅ hanya domain disensor
+    log "[*] Request API: $(mask_api_domain "$api_url")"
 
     local final_url
     final_url=$(curl -A "$USER_AGENT" \
@@ -109,7 +99,7 @@ get_m3u8_from_api() {
         -w '%{url_effective}' \
         "$api_url")
 
-    log "[DEBUG] Final URL: $(mask_final_url "$final_url")"
+    log "[DEBUG] Final URL: $(mask_domain "$final_url")"
 
     if [[ "$final_url" =~ ^https://manifest\.googlevideo\.com/.*\.m3u8 ]]; then
         printf "%s" "$final_url"
@@ -144,10 +134,11 @@ while IFS= read -r line; do
     video_id="$(get_video_id "$url")"
     [[ -z "$video_id" ]] && { log "[!] Gagal resolve video ID"; continue; }
 
-    log "[+] Video ID: $(mask_id "$video_id")"
+    # ✅ ID tetap terlihat
+    log "[+] Video ID: $video_id"
 
     m3u8="$(get_m3u8_from_api "$video_id")"
-    [[ -z "$m3u8" ]] && { log "[!] API gagal kasih stream untuk ID: $(mask_id "$video_id")"; continue; }
+    [[ -z "$m3u8" ]] && { log "[!] API gagal kasih stream untuk ID: $video_id"; continue; }
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
 
