@@ -70,31 +70,33 @@ get_video_id() {
     return 1
 }
 
-# ================= GET M3U8 FROM API =================
+# ================= GET M3U8 FROM API (FIX TOTAL) =================
 
 get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
 
-    local res
-    res=$(curl -A "$USER_AGENT" -L -s "$api_url" \
-        | tr -d '\000' \
-        | tr -d '\r')
+    echo "[*] Request API: $api_url"
 
-    # ambil semua URL
-    local urls
-    urls=$(echo "$res" | grep -oE 'https://manifest\.googlevideo\.com[^[:space:]]+')
+    # ✅ ambil URL hasil redirect FINAL (INI KUNCI FIX)
+    local final_url
+    final_url=$(curl -A "$USER_AGENT" \
+        -H "Accept: */*" \
+        -H "Connection: keep-alive" \
+        -L -s -o /dev/null \
+        -w '%{url_effective}' \
+        "$api_url")
 
-    [[ -z "$urls" ]] && return 1
+    echo "[DEBUG] Final URL: $final_url"
 
-    # PRIORITAS kualitas (dari tinggi ke rendah)
-    echo "$urls" | grep 'itag=96' | head -n 1 && return 0
-    echo "$urls" | grep 'itag=95' | head -n 1 && return 0
-    echo "$urls" | grep 'itag=94' | head -n 1 && return 0
-    echo "$urls" | grep 'itag=93' | head -n 1 && return 0
+    # validasi harus googlevideo m3u8
+    if [[ "$final_url" =~ ^https://manifest\.googlevideo\.com/.*\.m3u8 ]]; then
+        echo "$final_url"
+        return 0
+    fi
 
-    # fallback ambil pertama
-    echo "$urls" | head -n 1
+    echo "[!] Gagal mendapatkan redirect URL"
+    return 1
 }
 
 # ================= MAIN =================
@@ -115,6 +117,7 @@ while IFS= read -r line; do
 
     safe="$(safe_filename "$name")"
 
+    echo "========================================"
     echo "[*] Memproses: $name"
 
     video_id="$(get_video_id "$url")"
