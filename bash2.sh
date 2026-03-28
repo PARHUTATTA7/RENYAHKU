@@ -91,7 +91,7 @@ get_m3u8_from_api() {
 
     log "[DEBUG] Final URL: $(mask_domain "$final_url")"
 
-    if [[ "$final_url" == *.m3u8* ]]; then
+    if [[ "$final_url" =~ ^https://manifest\.googlevideo\.com/.+\.m3u8 ]]; then
         echo "$final_url"
         return 0
     fi
