@@ -1,1 +1,3 @@
-https://manifest.googlevideo.com/api/manifest/hls_variant/expire/1774702219/ei/K3rHacnSHvyh4t4PsOzY4A8/ip/103.127.132.205/id/1ZeofMF9dyQ.1/source/yt_live_broadcast/requiressl/yes/xpc/EgVo2aDSNQ%3D%3D/hfr/1/playlist_duration/30/manifest_duration/30/maudio/1/bui/AUUZDGLYOEMOlG9QGX8_NvE4wui09WdUE3iQaFejh66FRUI9jkbgrf-TCdFFI4jFenUjCvGKAEeFRjF8/spc/jlWavdPLNslHYC9Rff5HmQqHOkGgBmxenxsgUg9lVkVwWd_5zOZIP_rcZUtbNg/vprv/1/go/1/rqh/5/reg/0/pacing/0/nvgoi/1/ncsapi/1/keepalive/yes/fexp/51565116%2C51565682/dover/11/itag/0/playlist_type/DVR/sparams/expire%2Cei%2Cip%2Cid%2Csource%2Crequiressl%2Cxpc%2Chfr%2Cplaylist_duration%2Cmanifest_duration%2Cmaudio%2Cbui%2Cspc%2Cvprv%2Cgo%2Crqh%2Creg%2Citag%2Cplaylist_type/sig/AHEqNM4wRQIhAJ2S0n21jrGcr3NHtbrpcRTtK9LDXIaEP_w_qfvfrQiLAiABFbtguSExaqdLLJLKtuC-WA30SfxwagTGIm4LvHHltw%3D%3D/file/index.m3u8
+[*] Request API: /?id=Zdo-FyZvf2c
+[DEBUG] Final URL: /ytlive/index.m3u8?id=Zdo-FyZvf2c&type=hls
+[!] Gagal mendapatkan redirect URL

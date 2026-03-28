@@ -1,1 +1,3 @@
-
+[*] Request API: /?id=tZwcM9dMNNE
+[DEBUG] Final URL: /ytlive/index.m3u8?id=tZwcM9dMNNE&type=hls
+[!] Gagal mendapatkan redirect URL

@@ -1,1 +1,3 @@
-
+[*] Request API: /?id=LANGcarr_eE
+[DEBUG] Final URL: /ytlive/index.m3u8?id=LANGcarr_eE&type=hls
+[!] Gagal mendapatkan redirect URL
