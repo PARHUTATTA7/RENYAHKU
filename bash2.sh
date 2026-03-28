@@ -20,7 +20,7 @@ safe_filename() {
 # ================= LOG & MASK =================
 
 log() {
-    echo "$@"
+    echo "$@" >&2
 }
 
 mask_domain() {
@@ -51,27 +51,12 @@ get_video_id() {
     local url="$1"
     local html vid
 
-    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
+    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
 
-    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
-
-    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
-
-    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
-
-    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then
-        echo "${BASH_REMATCH[1]}"; return 0
-    fi
-
-    # fallback parse HTML
     html="$(fetch_html "$url")"
 
     vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
@@ -106,13 +91,11 @@ get_m3u8_from_api() {
 
     log "[DEBUG] Final URL: $(mask_domain "$final_url")"
 
-    # Jika redirect menghasilkan m3u8 apapun → anggap sukses
     if [[ "$final_url" == *.m3u8* ]]; then
-        printf "%s" "$final_url"
+        echo "$final_url"
         return 0
     fi
 
-    log "[!] Gagal mendapatkan redirect URL"
     return 1
 }
 
@@ -141,13 +124,14 @@ while IFS= read -r line; do
 
     echo "[+] Video ID: $video_id"
 
-    m3u8="$(get_m3u8_from_api "$video_id")"
-    [[ -z "$m3u8" ]] && { echo "[!] API gagal kasih stream untuk ID: $video_id"; continue; }
-
     output_file="$WORKDIR/${safe}.m3u8.txt"
-    echo "$m3u8" > "$output_file"
 
-    echo "[✓] Disimpan: $output_file"
+    if m3u8="$(get_m3u8_from_api "$video_id")"; then
+        echo "$m3u8" > "$output_file"
+        echo "[✓] Disimpan: $output_file"
+    else
+        echo "[!] Gagal mendapatkan stream: $video_id"
+    fi
 
 done < "$URL_FILE"
 
