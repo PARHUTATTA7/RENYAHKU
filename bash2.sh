@@ -17,11 +17,20 @@ safe_filename() {
     echo "$1" | tr -cd '[:alnum:]_.-'
 }
 
-# ================= MASK DOMAIN API =================
+# ================= LOG & MASK =================
+
+log() {
+    echo "$@"
+}
+
+mask_domain() {
+    local url="$1"
+    echo "$url" | sed -E 's#https?://[^/]+##'
+}
 
 mask_api_domain() {
-    # sensor hanya domain
-    echo "$1" | sed -E 's#(https?://)[^/]+#\1*******#'
+    local url="$1"
+    echo "$url" | sed -E 's#https?://[^/]+##'
 }
 
 # ================= LOAD API BASE =================
@@ -33,7 +42,7 @@ load_api_base() {
 
     [[ -z "$API_BASE" ]] && { echo "[!] API_BASE kosong di file: $API_FILE"; exit 1; }
 
-    echo "[+] API_BASE loaded: $API_BASE"
+    echo "[+] API_BASE loaded"
 }
 
 # ================= VIDEO ID EXTRACTOR =================
@@ -83,7 +92,7 @@ get_m3u8_from_api() {
     local video_id="$1"
     local api_url="${API_BASE}${video_id}"
 
-    # ✅ hanya domain disensor
+    # Log tanpa domain
     log "[*] Request API: $(mask_api_domain "$api_url")"
 
     local final_url
@@ -109,8 +118,8 @@ get_m3u8_from_api() {
 
 # ================= MAIN =================
 
-[[ ! -f "$URL_FILE" ]] && { log "[!] File $URL_FILE tidak ditemukan"; exit 1; }
-command -v curl >/dev/null || { log "[!] curl tidak ditemukan"; exit 1; }
+[[ ! -f "$URL_FILE" ]] && { echo "[!] File $URL_FILE tidak ditemukan"; exit 1; }
+command -v curl >/dev/null || { echo "[!] curl tidak ditemukan"; exit 1; }
 
 load_api_base
 
@@ -121,27 +130,24 @@ while IFS= read -r line; do
     name="$(echo "$line" | awk '{print $1}')"
     url="$(echo "$line" | sed 's/^[[:space:]]*[^[:space:]]*[[:space:]]*//')"
 
-    [[ -z "$name" || -z "$url" ]] && { log "[!] Format tidak valid"; continue; }
+    [[ -z "$name" || -z "$url" ]] && { echo "[!] Format tidak valid: $line"; continue; }
 
     safe="$(safe_filename "$name")"
 
-    log "========================================"
-    log "[*] Memproses: $name"
+    echo "[*] Memproses: $name"
 
     video_id="$(get_video_id "$url")"
-    [[ -z "$video_id" ]] && { log "[!] Gagal resolve video ID"; continue; }
+    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID: $url"; continue; }
 
-    # ✅ ID tetap terlihat
-    log "[+] Video ID: $video_id"
+    echo "[+] Video ID: $video_id"
 
     m3u8="$(get_m3u8_from_api "$video_id")"
-    [[ -z "$m3u8" ]] && { log "[!] API gagal kasih stream untuk ID: $video_id"; continue; }
+    [[ -z "$m3u8" ]] && { echo "[!] API gagal kasih stream untuk ID: $video_id"; continue; }
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
+    echo "$m3u8" > "$output_file"
 
-    printf "%s\n" "$m3u8" > "$output_file"
-
-    log "[✓] Disimpan: $output_file"
+    echo "[✓] Disimpan: $output_file"
 
 done < "$URL_FILE"
 
@@ -157,9 +163,9 @@ if ! git diff --cached --quiet; then
     git fetch origin master
     git merge --strategy-option=theirs origin/master 2>/dev/null || true
     git push origin master --force-with-lease
-    log "[✓] Berhasil push ke repository"
+    echo "[✓] Berhasil push ke repository"
 else
-    log "[i] Tidak ada perubahan"
+    echo "[i] Tidak ada perubahan"
 fi
 
-log "[✓] Script selesai"
+echo "[✓] Script selesai"
