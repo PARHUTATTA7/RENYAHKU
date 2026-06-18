@@ -75,30 +75,32 @@ get_video_id() {
 
 get_m3u8_from_api() {
     local video_id="$1"
-    local api_url="${API_BASE}${video_id}"
+    local api_url="$API_BASE"
+
+    api_url="${api_url//\$\{id\}/$video_id}"
+    api_url="${api_url//\{id\}/$video_id}"
+
+    [[ "$api_url" == "$API_BASE" ]] && api_url="${API_BASE}${video_id}"
 
     log "[*] Request API: $(mask_api_domain "$api_url")"
 
     local final_url
-    final_url=$(curl -A "$USER_AGENT" \
-        -H "Accept: */*" \
-        -H "Connection: keep-alive" \
-        --max-redirs 10 \
-        --connect-timeout 10 \
-        -L -s -o /dev/null \
+    final_url=$(curl \
+        -A "$USER_AGENT" \
+        -L -s \
+        -o /dev/null \
         -w '%{url_effective}' \
         "$api_url")
 
     log "[DEBUG] Final URL: $(mask_domain "$final_url")"
 
-    if [[ "$final_url" =~ ^https://manifest\.googlevideo\.com/.+\.m3u8 ]]; then
+    [[ -n "$final_url" ]] && {
         echo "$final_url"
         return 0
-    fi
+    }
 
     return 1
 }
-
 # ================= MAIN =================
 
 [[ ! -f "$URL_FILE" ]] && { echo "[!] File $URL_FILE tidak ditemukan"; exit 1; }
