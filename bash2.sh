@@ -74,6 +74,7 @@ get_video_id() {
 # ================= GET M3U8 =================
 
 get_m3u8_from_api() {
+
     local video_id="$1"
     local api_url="$API_BASE"
 
@@ -84,7 +85,70 @@ get_m3u8_from_api() {
 
     log "[*] Request API: $(mask_api_domain "$api_url")"
 
+    # ==========================
+    # Ambil response API
+    # ==========================
+
+    local response
+
+    response=$(curl \
+        -A "$USER_AGENT" \
+        -L -s \
+        "$api_url")
+
+    [[ -z "$response" ]] && return 1
+
+
+    # ==========================
+    # Cari manifest langsung
+    # ==========================
+
+    local manifest
+
+    manifest=$(echo "$response" \
+        | grep -oP 'https://manifest\.googlevideo\.com[^"]+' \
+        | head -n1)
+
+    if [[ -n "$manifest" ]]; then
+
+        manifest=$(echo "$manifest" \
+            | sed 's/\\u0026/\&/g')
+
+        log "[DEBUG] Manifest ditemukan"
+
+        echo "$manifest"
+
+        return 0
+    fi
+
+
+    # ==========================
+    # Cari hlsManifestUrl
+    # ==========================
+
+    manifest=$(echo "$response" \
+        | grep -oP '"hlsManifestUrl":"\K[^"]+' \
+        | head -n1)
+
+    if [[ -n "$manifest" ]]; then
+
+        manifest=$(echo "$manifest" \
+            | sed 's/\\u0026/\&/g')
+
+        log "[DEBUG] hlsManifestUrl ditemukan"
+
+        echo "$manifest"
+
+        return 0
+    fi
+
+
+    # ==========================
+    # Cek redirect URL
+    # ==========================
+
     local final_url
+
     final_url=$(curl \
         -A "$USER_AGENT" \
         -L -s \
@@ -94,10 +158,34 @@ get_m3u8_from_api() {
 
     log "[DEBUG] Final URL: $(mask_domain "$final_url")"
 
-    [[ -n "$final_url" ]] && {
+
+    # Jangan gunakan URL API sendiri
+
+    [[ -z "$final_url" ]] && return 1
+
+    [[ "$final_url" == "$api_url" ]] && return 1
+
+
+    # Tolak endpoint ytlive
+
+    [[ "$final_url" == *"/ytlive/"* ]] && return 1
+
+
+    # Tolak MP4
+
+    [[ "$final_url" == *"videoplayback"* ]] && return 1
+
+
+    # Terima HLS manifest
+
+    if [[ "$final_url" == *"manifest.googlevideo.com"* ]] ||
+       [[ "$final_url" == *"/api/manifest/hls_variant/"* ]]; then
+
         echo "$final_url"
+
         return 0
-    }
+    fi
+
 
     return 1
 }
@@ -109,30 +197,46 @@ command -v curl >/dev/null || { echo "[!] curl tidak ditemukan"; exit 1; }
 load_api_base
 
 while IFS= read -r line; do
+
     [[ -z "$line" ]] && continue
     [[ "$line" =~ ^[[:space:]]*# ]] && continue
 
     name="$(echo "$line" | awk '{print $1}')"
     url="$(echo "$line" | sed 's/^[[:space:]]*[^[:space:]]*[[:space:]]*//')"
 
-    [[ -z "$name" || -z "$url" ]] && { echo "[!] Format tidak valid: $line"; continue; }
+    [[ -z "$name" || -z "$url" ]] && {
+        echo "[!] Format tidak valid: $line"
+        continue
+    }
 
     safe="$(safe_filename "$name")"
 
     echo "[*] Memproses: $name"
 
     video_id="$(get_video_id "$url")"
-    [[ -z "$video_id" ]] && { echo "[!] Gagal resolve video ID: $url"; continue; }
+
+    [[ -z "$video_id" ]] && {
+        echo "[!] Gagal resolve video ID: $url"
+        continue
+    }
 
     echo "[+] Video ID: $video_id"
 
     output_file="$WORKDIR/${safe}.m3u8.txt"
 
     if m3u8="$(get_m3u8_from_api "$video_id")"; then
+
         echo "$m3u8" > "$output_file"
+
         echo "[✓] Disimpan: $output_file"
+
     else
-        echo "[!] Gagal mendapatkan stream: $video_id"
+
+        echo "[!] Bukan live stream: $video_id"
+
+        # Hapus file lama jika ada
+        rm -f "$output_file"
+
     fi
 
 done < "$URL_FILE"
