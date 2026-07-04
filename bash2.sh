@@ -51,132 +51,152 @@ get_video_id() {
     local url="$1"
     local html vid final_url
 
-    # ==========================================
+    # --------------------------------------------------
     # URL sudah berupa video
-    # ==========================================
+    # --------------------------------------------------
     [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
     [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
     [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
-    [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
     [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
+    [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
 
-    # ==========================================
-    # Coba lihat redirect
-    # ==========================================
-    final_url=$(curl \
-        -A "$USER_AGENT" \
-        -L -s \
-        --cookie "$COOKIES_FILE" \
-        -o /dev/null \
-        -w '%{url_effective}' \
-        "$url")
+    # --------------------------------------------------
+    # Cek redirect
+    # --------------------------------------------------
+    final_url=$(
+        curl \
+            -A "$USER_AGENT" \
+            -L \
+            -s \
+            --cookie "$COOKIES_FILE" \
+            -o /dev/null \
+            -w '%{url_effective}' \
+            "$url"
+    )
 
     if [[ "$final_url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
         echo "${BASH_REMATCH[1]}"
         return 0
     fi
 
-    # ==========================================
-    # Ambil HTML
-    # ==========================================
+    # --------------------------------------------------
+    # Download HTML
+    # --------------------------------------------------
     html="$(fetch_html "$url")"
-    echo "$html" > /tmp/live.html
-	
-	echo "[DEBUG] watchEndpoint:"
-	grep -oP '"watchEndpoint".{0,100}' /tmp/live.html | head -3 >&2
-	
-	echo "[DEBUG] ytCommand:"
-	grep -o "ytCommand" /tmp/live.html | head >&2
-	
-	echo "[DEBUG] First videoId:"
-	grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' /tmp/live.html | head -10 >&2
 
     [[ -z "$html" ]] && return 1
 
-    # ==========================================
-    # PRIORITAS 1
-    # watchEndpoint -> video live yang sedang dibuka
-    # ==========================================
-    vid=$(echo "$html" |
-        grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' |
-		sort |
-		uniq -c |
-		sort -rn |
-        head -1 |
-		awk '{print $2}'
-		)
-
-    [[ -n "$vid" ]] && {
-        echo "$vid"
-        return 0
-    }
-
-    # ==========================================
-    # PRIORITAS 2
-    # canonical watch
-    # ==========================================
-    vid=$(echo "$html" |
-        grep -oP 'canonical"\s+href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' |
-        head -1)
-
-    [[ -n "$vid" ]] && {
-        echo "$vid"
-        return 0
-    }
-
-    # ==========================================
-    # PRIORITAS 3
-    # ytCommand watchEndpoint
-    # ==========================================
-    vid=$(echo "$html" |
+    # --------------------------------------------------
+    # 1. ytInitialPlayerResponse.videoDetails.videoId
+    # --------------------------------------------------
+    vid=$(
+        printf '%s' "$html" |
         perl -0777 -ne '
-            if(/watchEndpoint"\s*:\s*\{"videoId":"([^"]+)"/s){
-                print "$1";
-            }')
+            if(/ytInitialPlayerResponse\s*=\s*(\{.*?\});/s){
+                my $j=$1;
+                if($j =~ /"videoDetails"\s*:\s*\{.*?"videoId":"([A-Za-z0-9_-]{11})"/s){
+                    print $1;
+                    exit;
+                }
+            }
+        '
+    )
 
     [[ -n "$vid" ]] && {
         echo "$vid"
         return 0
     }
 
-    # ==========================================
-    # PRIORITAS 4
-    # Badge LIVE
-    # ==========================================
-    vid=$(echo "$html" |
+    # --------------------------------------------------
+    # 2. externalVideoId
+    # --------------------------------------------------
+    vid=$(
+        printf '%s' "$html" |
+        grep -oP '"externalVideoId":"\K[A-Za-z0-9_-]{11}' |
+        head -1
+    )
+
+    [[ -n "$vid" ]] && {
+        echo "$vid"
+        return 0
+    }
+
+    # --------------------------------------------------
+    # 3. currentVideoEndpoint
+    # --------------------------------------------------
+    vid=$(
+        printf '%s' "$html" |
         perl -0777 -ne '
-            while(/"videoId":"([^"]+)".*?BADGE_STYLE_TYPE_LIVE_NOW/sg){
-                print "$1\n";
+            if(/"currentVideoEndpoint".*?"videoId":"([A-Za-z0-9_-]{11})"/s){
+                print $1;
                 exit;
-            }')
+            }
+        '
+    )
 
     [[ -n "$vid" ]] && {
         echo "$vid"
         return 0
     }
 
-    # ==========================================
-    # PRIORITAS 5
-    # ownerProfileUrl + videoId
-    # ==========================================
-    vid=$(echo "$html" |
+    # --------------------------------------------------
+    # 4. ytCommand watchEndpoint
+    # --------------------------------------------------
+    vid=$(
+        printf '%s' "$html" |
         perl -0777 -ne '
-            while(/"videoId":"([^"]+)".*?"ownerProfileUrl":/sg){
-                print "$1\n";
+            if(/window\[\x27ytCommand\x27\].*?"watchEndpoint".*?"videoId":"([A-Za-z0-9_-]{11})"/s){
+                print $1;
                 exit;
-            }')
+            }
+        '
+    )
 
     [[ -n "$vid" ]] && {
         echo "$vid"
         return 0
     }
 
-    # ==========================================
-    # Fallback terakhir
-    # ==========================================
-    vid=$(echo "$html" |
+    # --------------------------------------------------
+    # 5. Canonical
+    # --------------------------------------------------
+    vid=$(
+        printf '%s' "$html" |
+        grep -oP '<link rel="canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' |
+        head -1
+    )
+
+    [[ -n "$vid" ]] && {
+        echo "$vid"
+        return 0
+    }
+
+    # --------------------------------------------------
+    # 6. LIVE badge
+    # --------------------------------------------------
+    vid=$(
+        printf '%s' "$html" |
+        perl -0777 -ne '
+            while(/"videoId":"([A-Za-z0-9_-]{11})".*?BADGE_STYLE_TYPE_LIVE_NOW/sg){
+                print $1;
+                exit;
+            }
+        '
+    )
+
+    [[ -n "$vid" ]] && {
+        echo "$vid"
+        return 0
+    }
+
+    # --------------------------------------------------
+    # 7. Fallback
+    # --------------------------------------------------
+    vid=$(
+        printf '%s' "$html" |
         grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' |
-        head -1)
+        tail -1
+    )
 
     [[ -n "$vid" ]] && {
         echo "$vid"
