@@ -220,107 +220,99 @@ get_m3u8_from_api() {
 
     log "[*] Request API: $(mask_api_domain "$api_url")"
 
-    # ==========================
-    # Ambil response API
-    # ==========================
-
-    local response
-
-    response=$(curl \
-        -A "$USER_AGENT" \
-        -L -s \
-        "$api_url")
-
-    [[ -z "$response" ]] && return 1
-
-
-    # ==========================
-    # Cari manifest langsung
-    # ==========================
-
-    local manifest
-
-    manifest=$(echo "$response" \
-        | grep -oP 'https://manifest\.googlevideo\.com[^"]+' \
-        | head -n1)
-
-    if [[ -n "$manifest" ]]; then
-
-        manifest=$(echo "$manifest" \
-            | sed 's/\\u0026/\&/g')
-
-        log "[DEBUG] Manifest ditemukan"
-
-        echo "$manifest"
-
-        return 0
-    fi
-
-
-    # ==========================
-    # Cari hlsManifestUrl
-    # ==========================
-
-    manifest=$(echo "$response" \
-        | grep -oP '"hlsManifestUrl":"\K[^"]+' \
-        | head -n1)
-
-    if [[ -n "$manifest" ]]; then
-
-        manifest=$(echo "$manifest" \
-            | sed 's/\\u0026/\&/g')
-
-        log "[DEBUG] hlsManifestUrl ditemukan"
-
-        echo "$manifest"
-
-        return 0
-    fi
-
-
-    # ==========================
-    # Cek redirect URL
-    # ==========================
+    # =========================================
+    # PRIORITAS 1 : Ikuti redirect
+    # =========================================
 
     local final_url
 
     final_url=$(curl \
         -A "$USER_AGENT" \
-        -L -s \
+        -L \
+        -s \
         -o /dev/null \
         -w '%{url_effective}' \
         "$api_url")
 
     log "[DEBUG] Final URL: $(mask_domain "$final_url")"
 
-
-    # Jangan gunakan URL API sendiri
-
-    [[ -z "$final_url" ]] && return 1
-
-    [[ "$final_url" == "$api_url" ]] && return 1
-
-
-    # Tolak endpoint ytlive
-
-    [[ "$final_url" == *"/ytlive/"* ]] && return 1
-
-
-    # Tolak MP4
-
-    [[ "$final_url" == *"videoplayback"* ]] && return 1
-
-
-    # Terima HLS manifest
-
-    if [[ "$final_url" == *"manifest.googlevideo.com"* ]] ||
+    if [[ -n "$final_url" ]] &&
+       [[ "$final_url" != "$api_url" ]] &&
        [[ "$final_url" == *"/api/manifest/hls_variant/"* ]]; then
+
+        log "[DEBUG] Menggunakan redirect hls_variant"
 
         echo "$final_url"
 
         return 0
     fi
 
+    # =========================================
+    # PRIORITAS 2 : Ambil response API
+    # =========================================
+
+    local response
+
+    response=$(curl \
+        -A "$USER_AGENT" \
+        -L \
+        -s \
+        "$api_url")
+
+    [[ -z "$response" ]] && return 1
+
+    # =========================================
+    # Cari manifest.googlevideo.com
+    # =========================================
+
+    local manifest
+
+    manifest=$(echo "$response" |
+        grep -oP 'https://manifest\.googlevideo\.com[^"]+' |
+        head -n1)
+
+    if [[ -n "$manifest" ]]; then
+
+        manifest=$(echo "$manifest" |
+            sed 's/\\u0026/\&/g')
+
+        # jika masih hls_playlist, ubah ke hls_variant
+        manifest="${manifest/\/api\/manifest\/hls_playlist\//\/api\/manifest\/hls_variant\/}"
+
+        if [[ "$manifest" == *"/api/manifest/hls_variant/"* ]]; then
+
+            log "[DEBUG] Manifest hls_variant ditemukan"
+
+            echo "$manifest"
+
+            return 0
+        fi
+    fi
+
+    # =========================================
+    # Cari hlsManifestUrl
+    # =========================================
+
+    manifest=$(echo "$response" |
+        grep -oP '"hlsManifestUrl":"\K[^"]+' |
+        head -n1)
+
+    if [[ -n "$manifest" ]]; then
+
+        manifest=$(echo "$manifest" |
+            sed 's/\\u0026/\&/g')
+
+        manifest="${manifest/\/api\/manifest\/hls_playlist\//\/api\/manifest\/hls_variant\/}"
+
+        if [[ "$manifest" == *"/api/manifest/hls_variant/"* ]]; then
+
+            log "[DEBUG] hlsManifestUrl ditemukan"
+
+            echo "$manifest"
+
+            return 0
+        fi
+    fi
 
     return 1
 }
