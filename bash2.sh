@@ -80,6 +80,16 @@ get_video_id() {
     # Ambil HTML
     # ==========================================
     html="$(fetch_html "$url")"
+    echo "$html" > /tmp/live.html
+	
+	echo "[DEBUG] watchEndpoint:"
+	grep -oP '"watchEndpoint".{0,100}' /tmp/live.html | head -3 >&2
+	
+	echo "[DEBUG] ytCommand:"
+	grep -o "ytCommand" /tmp/live.html | head >&2
+	
+	echo "[DEBUG] First videoId:"
+	grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' /tmp/live.html | head -10 >&2
 
     [[ -z "$html" ]] && return 1
 
