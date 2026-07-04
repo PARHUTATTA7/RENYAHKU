@@ -49,24 +49,61 @@ load_api_base() {
 
 get_video_id() {
     local url="$1"
-    local html vid
+    local html vid final_url
 
-    if [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
-    if [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
-    if [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
-    if [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
-    if [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]]; then echo "${BASH_REMATCH[1]}"; return 0; fi
+    # Jika URL sudah berupa video
+    [[ "$url" =~ v=([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
+    [[ "$url" =~ youtu\.be/([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
+    [[ "$url" =~ youtube\.com/live/([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
+    [[ "$url" =~ youtube\.com/shorts/([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
+    [[ "$url" =~ youtube\.com/embed/([A-Za-z0-9_-]{11}) ]] && { echo "${BASH_REMATCH[1]}"; return 0; }
+
+    # Cek apakah URL redirect ke watch?v=
+    final_url=$(curl -A "$USER_AGENT" \
+        -L -s -o /dev/null \
+        -w '%{url_effective}' \
+        --cookie "$COOKIES_FILE" \
+        "$url")
+
+    if [[ "$final_url" =~ v=([A-Za-z0-9_-]{11}) ]]; then
+        echo "${BASH_REMATCH[1]}"
+        return 0
+    fi
 
     html="$(fetch_html "$url")"
 
-    vid="$(echo "$html" | grep -oP 'canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+    # Canonical
+    vid=$(echo "$html" |
+        grep -oP '<link rel="canonical" href="https://www\.youtube\.com/watch\?v=\K[A-Za-z0-9_-]{11}' |
+        head -1)
 
-    vid="$(echo "$html" | grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+    [[ -n "$vid" ]] && {
+        echo "$vid"
+        return 0
+    }
 
-    vid="$(echo "$html" | grep -oP 'watch\?v=\K[A-Za-z0-9_-]{11}' | head -n 1)"
-    [[ -n "$vid" ]] && { echo "$vid"; return 0; }
+    # Video dengan badge LIVE
+    vid=$(echo "$html" |
+        perl -0777 -ne '
+            while(/"videoId":"([^"]+)".*?"BADGE_STYLE_TYPE_LIVE_NOW"/sg){
+                print "$1\n";
+                exit;
+            }')
+
+    [[ -n "$vid" ]] && {
+        echo "$vid"
+        return 0
+    }
+
+    # Fallback terakhir
+    vid=$(echo "$html" |
+        grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' |
+        head -1)
+
+    [[ -n "$vid" ]] && {
+        echo "$vid"
+        return 0
+    }
 
     return 1
 }
