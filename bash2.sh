@@ -98,8 +98,13 @@ get_video_id() {
     # watchEndpoint -> video live yang sedang dibuka
     # ==========================================
     vid=$(echo "$html" |
-        grep -oP '"watchEndpoint"\s*:\s*\{"videoId":"\K[A-Za-z0-9_-]{11}' |
-        head -1)
+        grep -oP '"videoId":"\K[A-Za-z0-9_-]{11}' |
+		sort |
+		uniq -c |
+		sort -rn |
+        head -1 |
+		awk '{print $2}'
+		)
 
     [[ -n "$vid" ]] && {
         echo "$vid"
