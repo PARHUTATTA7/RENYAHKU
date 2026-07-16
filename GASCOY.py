@@ -2,11 +2,9 @@ import sys
 import requests
 from pathlib import Path
 
-
 # Load konfigurasi
 CONFIG = {}
 exec((Path.home() / "datamdtv_file.txt").read_text(encoding="utf-8"), CONFIG)
-
 
 CHANNEL_ID = CONFIG["CHANNEL_ID"]
 API_URL = CONFIG["API_URL"]
@@ -42,11 +40,12 @@ def build_proxies(proxy):
         "https": scheme + proxy,
     }
 
+
 def try_proxy(api_url, proxy, headers):
     proxies = build_proxies(proxy)
 
     try:
-        print(f"[•] {proxy}", file=sys.stderr)
+        print(f"[•] Mencoba proxy: {proxy}", file=sys.stderr)
 
         r = requests.get(
             api_url,
@@ -56,28 +55,41 @@ def try_proxy(api_url, proxy, headers):
         )
 
         r.raise_for_status()
-        return r.json()
+
+        data = r.json()
+
+        if data.get("success"):
+            return data
 
     except Exception as e:
         print(f"[×] {proxy} -> {e}", file=sys.stderr)
-        return None
+
+    return None
 
 
 def direct_request(api_url, headers):
     try:
         print("[•] Mencoba koneksi langsung...", file=sys.stderr)
 
-        res = requests.get(
+        r = requests.get(
             api_url,
             headers=headers,
             timeout=10,
         )
 
-        res.raise_for_status()
-        return res.json()
+        r.raise_for_status()
+
+        return r.json()
 
     except Exception as e:
         print(f"[×] Direct gagal: {e}", file=sys.stderr)
+        return None
+
+
+def extract_dash_url(data):
+    try:
+        return data["data"]["playIhtv"]["android"]["url"]
+    except (KeyError, TypeError):
         return None
 
 
@@ -91,7 +103,7 @@ def main():
     for proxy in proxy_list:
         data = try_proxy(API_URL, proxy, HEADERS)
 
-        if data and data.get("success"):
+        if data:
             print(f"[✓] Berhasil memakai proxy: {proxy}", file=sys.stderr)
             break
 
@@ -102,23 +114,20 @@ def main():
         print("Tidak dapat mengambil data.", file=sys.stderr)
         return
 
-    if not data.get("success") or not data.get("data"):
+    if not data.get("success"):
         print(data, file=sys.stderr)
         return
 
-    stream = data["data"].get("url_streaming")
-    sign = data["data"].get("sign_url")
+    dash_url = extract_dash_url(data)
 
-    if not stream or not sign:
-        print("Stream URL tidak ditemukan.", file=sys.stderr)
+    if not dash_url:
+        print("URL DASH tidak ditemukan.", file=sys.stderr)
         return
 
-    final_url = stream + ("&" if "?" in stream else "?") + sign
+    with open("mdtv.mpd.txt", "w", encoding="utf-8") as f:
+        f.write(dash_url)
 
-    with open("mdtv.m3u8.txt", "w", encoding="utf-8") as f:
-        f.write(final_url)
-
-    print(final_url)
+    print(dash_url)
 
 
 if __name__ == "__main__":
