@@ -1,0 +1,58 @@
+name: mdtvdoo LIVE
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
+
+
+jobs:
+  mdtvdo_LIVE:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚙️ Setup Python
+        run: |
+          sudo apt update -y
+          pip install requests[socks]
+
+      - name: 📄 Ambil datamdtv1_file.txt dari Repo Privat
+        run: |
+          git clone --depth=1 https://x-access-token:${{ secrets.TOKEN_PRIVATE }}@github.com/${{ secrets.REPO_PRIVATE }} private
+          cp private/datamdtv1_file.txt $HOME/datamdtv1_file.txt
+          rm -rf private
+
+      - name: ▶️ Jalankan Python Grabber
+        run: |
+          python GASCOY1.py
+
+      - name: ✅ Commit & Push hasil
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          
+          # Pastikan branch utama sinkron
+          git pull origin master || git pull origin main || true
+
+          # Tambahkan semua file hasil (*.txt)
+          git add *.txt || true
+
+          if git diff --cached --quiet; then
+            echo "⚠️ Tidak ada perubahan file M3U8"
+          else
+            TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+            echo "Run at: ${TIMESTAMP}" > .last_run_daily
+            git add .last_run_daily
+
+            git commit -m "🆕 Update M3U8 hasil Dailymotion - ${TIMESTAMP}"
+            git push origin HEAD:master || git push origin HEAD:main
+            echo "✅ Commit berhasil pada ${TIMESTAMP}"
+          fi
