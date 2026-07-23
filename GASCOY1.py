@@ -1,4 +1,5 @@
 import requests
+import sys
 from pathlib import Path
 
 
@@ -10,6 +11,7 @@ exec((Path.home() / "datamdtv1_file.txt").read_text(encoding="utf-8"), CONFIG)
 CHANNEL_ID = CONFIG["CHANNEL_ID"]
 API_URL = CONFIG["API_URL"]
 PROXY_LIST_URL = CONFIG["PROXY_LIST_URL"]
+HEADERS = CONFIG["HEADERS"]
 
 
 def get_proxy_list(url):
