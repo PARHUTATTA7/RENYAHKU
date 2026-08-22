@@ -1,1 +1,1 @@
-https://tencent-css-live.byteplaycdn.com/vos/DASH/net/manifest.mpd?enc=ivQQyynTbfQxZqcZCj4EAg&exp=1787402256&encp=x9EzMtIf2crbej2YT6bRVA&expp=1787412756
+https://tencent-css-live.byteplaycdn.com/vos/DASH/net/manifest.mpd?enc=AzF9najd5JVlZctm4u3Rng&exp=1787405661&encp=zWOpli7mm6pyNwK9VEktKw&expp=1787416161
