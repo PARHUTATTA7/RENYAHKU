@@ -54,7 +54,7 @@ jobs:
 
           git pull origin master
 
-          git add sriwijayatvonline.txt padang_tv.txt
+          git add sriwijayatvonline.m3u8.txt padang_tv.m3u8.txt
 
           if git diff --cached --quiet; then
             echo "⚠️ Tidak ada perubahan di file stream"
